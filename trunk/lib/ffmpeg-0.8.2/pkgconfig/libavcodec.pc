@@ -1,0 +1,14 @@
+prefix=C:/projects/music_player/ffmpeg-psp-0.8.2-slim
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 53.7.0
+Requires: libavutil = 51.9.1
+Requires.private: 
+Conflicts:
+Libs: -L${libdir} -lavcodec -Lc:/pspdev/psp/lib -lSDLmain -lSDL -lm -lGL -lpspvfpu -Lc:/pspdev/psp/sdk/lib -lpspirkeyb -lpsppower -lpspdebug -lpspgu -lpspctrl -lpspge -lpspdisplay -lpsphprm -lpspsdk -lpsprtc -lpspaudio -lc -lpspuser -lpsputility -lpspkernel -lpspnet_inet -lm -lbz2 -lz -lc -lpspnet -lpspnet_inet -lpspnet_apctl -lpspnet_resolver -lpsputility -lpspuser -lpspkernel
+Libs.private: 
+Cflags: -I${includedir}
