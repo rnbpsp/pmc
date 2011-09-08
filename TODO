@@ -1,0 +1,14 @@
+ff_read_id3v2
+taglib try libjpeg, scejpeg dont work
+	album art // atleast id3v2
+
+finish settings //file list ini not reading with minglue-psp.h
+	cpu setup
+	
+show cpu and gpu load
+
+after exting now playing to file browser excess list
+		// happen only if you get to now playing through select or from main menu
+
+topbar: plugged in icon
+

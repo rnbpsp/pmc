@@ -1,0 +1,5 @@
+r2
+	*fixed crash when opening certain files(unaligned access in ffmpeg)
+	*update to ffmpeg 0.8.2
+r1
+	Initial release

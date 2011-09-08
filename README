@@ -1,0 +1,66 @@
+PSP Music Center by RNB_PSP
+(rnbpsp@gmail.com)
+
+Description
+      This is a music player for the Sony PSP powered by
+ FFMpeg which means you can play all audio codecs from any
+ container format supported by ffmpeg(http://ffmpeg.org/general.html).
+ This also makes use of the PSP's hardware decoders for
+ some codecs.
+
+NOTES:
+ Since this is an initial release, program is expected to be buggy,
+ only stereo signed 16bit audio with the ff. sample rates
+ will play correctly:
+    48000, 44100, 32000, 24000, 22050, 16000, 12000, 11050, 8000
+ 
+ and only MP3, WMAv2(only from *.wma files) and
+ AAC(except from *.aac files) are hardware accelerated.
+ 
+ Since FFMpeg supports a lot of container formats and codecs,
+ I do not have the time to test if all of it works correctly.
+ I have only tested the ff.: codec(file extension)
+    MP3(mp3, flv)
+    AAC(aac, mp4, m4a)
+    WMAv2(wma)
+    FLAC(flac)
+    signed 16bit PCM(wav)
+ 
+ For now, a black box is shown in place of the album art.
+ Album art will be shown in the next release.
+
+Controls (temporary, will be changed and configurable soon)
+ OK and Cancel buttons are the same settings in XMB (X or O)
+
+Main Menu:
+ Dpad Left  = previous menu
+ Dpad Right = next menu
+ OK         = select menu
+ Cancel     = quit application
+
+File Browser:
+ Dpad Up    = previous item
+ Dpad Down  = next item
+ Dpad Left  = page up
+ Dpad Right = page down
+ OK         = play song/open directory
+ Cancel     = return to main menu
+ Triangle   = up one folder
+ Square     = refresh current directory
+ Select     = go to now playing
+
+Now Playing:
+ OK               = toggle pause
+ Cancel           = return to file browser
+ Dpad Left/Right  = seek
+ Triangle         = toggle repeat
+ L/R Trigger      = previous/next song
+
+Configuration
+ configuration files are inside the "ini" folder
+ 
+ See settings.ini.
+ cpu.ini holds file names that will be opened by the file browser
+ for playing. Not all formats are listed in it but you can add your
+ own extensions.
+ 
