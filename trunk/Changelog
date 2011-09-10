@@ -1,5 +1,6 @@
 r3
-	(*)image buffers uses smaller buffers
+	(*)added atrac3 hardware decoder
+	(*)images now use smaller buffers
 			16pixel aligned width and height instead of powers of 2
 	(*)albm art is now shown. no more black box.
 			only jpg mime type will open

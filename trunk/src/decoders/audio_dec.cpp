@@ -3,16 +3,19 @@
 #include "../player.h"
 extern "C"
 {
-#include <malloc.h>
-}
+	#include <malloc.h>
 
 // codec's open function is responsible for cleaning up in case of error
-extern "C" int ffmpegAdec_open(AVCodecContext *ctx);
-extern "C" int sceMp3Aac_open(AVCodecContext *ctx, int type);
-extern "C" int sceWma_open(const char *filename, AVIOContext* io_ctx);
+	int ffmpegAdec_open(AVCodecContext *ctx);
+	int sceMp3Aac_open(AVCodecContext *ctx, int type);
+	int sceWma_open(const char *filename, AVIOContext* io_ctx);
+	int sceAtrac3_open(AVCodecContext *ctx);
+}
+
 extern const AUDIO_DECODER ffmpegAudio;
 extern const AUDIO_DECODER sceMp3Aac;
 extern const AUDIO_DECODER sceAsfWma;
+extern const AUDIO_DECODER sceAtrac3;
 
 char custom_tag[4][256];
 int custom_info[4];
@@ -49,13 +52,13 @@ AUDIO_DECODERS::open(
 				if (sceMp3Aac_open(codec_ctx, PSP_CODEC_AAC))
 					audio_dec = &sceMp3Aac;
 				break;
+			case CODEC_ID_ATRAC3:
+				if (sceAtrac3_open(codec_ctx))
+					audio_dec = &sceAtrac3;
+				break;
 		/*
 			case CODEC_ID_ATRAC3P:
 				if (sceAt3Aa3_open(codec_ctx, PSP_CODEC_AT3PLUS))
-					audio_dec = &sceAt3Aa3;
-				break;
-			case CODEC_ID_ATRAC3:
-				if (sceAt3Aa3_open(codec_ctx, PSP_CODEC_AT3))
 					audio_dec = &sceAt3Aa3;
 				break;
 		*/
@@ -64,29 +67,21 @@ AUDIO_DECODERS::open(
 		}
 	}
 	
-	if (audio_dec)
+	if ( !audio_dec && codec_ctx!=NULL)
 	{
-		printf("allocating tmp buffer:64\n");
-		tmpbuf = (u8*)memalign(64, C_AUDIOBUF_MAX_SIZE);
-		if (tmpbuf) return true;
-		
-		// if it fails here, there's no need to try
-		// ffmpeg as it's a memory allocation issue
-		printf("failed allocating tmp buffer\n");
-		this->close();
-		return false;
+		if ( ffmpegAdec_open(codec_ctx) )
+			audio_dec = &ffmpegAudio;
+	// no need to allocate buffers without an open decoder
+		else return false;
 	}
-	else if ( codec_ctx!=NULL && ffmpegAdec_open(codec_ctx) )
-	{
-		audio_dec = &ffmpegAudio;
-		
-		printf("allocating tmp buffer:16\n");
-		tmpbuf = (u8*)memalign(16, C_AUDIOBUF_MAX_SIZE);
-		if (tmpbuf) return true;
-		
-		printf("failed allocating tmp buffer\n");
-		this->close();
-	}
+	
+	printf("allocating tmp buffer:64\n");
+	tmpbuf = (u8*)memalign(64, C_AUDIOBUF_MAX_SIZE);
+	if (tmpbuf) return true;
+	
+	printf("failed allocating tmp buffer\n");
+	this->close();
+	
 	return false;
 }
 

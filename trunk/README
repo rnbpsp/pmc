@@ -14,20 +14,19 @@ NOTES:
  will play correctly:
     48000, 44100, 32000, 24000, 22050, 16000, 12000, 11050, 8000
  
- and only MP3, WMAv2(only from *.wma files) and
- AAC(except from *.aac files) are hardware accelerated.
+ and only MP3, WMAv2(only from *.wma files), ATRAC3 and
+ AAC(except from files with adts headers) are hardware
+ accelerated.
  
  Since FFMpeg supports a lot of container formats and codecs,
  I do not have the time to test if all of it works correctly.
  I have only tested the ff.: codec(file extension)
+		ATRAC3(at3 from umd)
     MP3(mp3, flv)
     AAC(aac, mp4, m4a)
     WMAv2(wma)
     FLAC(flac)
     signed 16bit PCM(wav)
- 
- For now, a black box is shown in place of the album art.
- Album art will be shown in the next release.
 
 Controls (temporary, will be changed and configurable soon)
  OK and Cancel buttons are the same settings in XMB (X or O)
@@ -61,6 +60,5 @@ Configuration
  
  See settings.ini.
  cpu.ini holds file names that will be opened by the file browser
- for playing. Not all formats are listed in it but you can add your
+ for playing. Not all formats supported are listed in it but you can add your
  own extensions.
- 

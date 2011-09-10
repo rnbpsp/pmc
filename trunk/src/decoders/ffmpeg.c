@@ -22,8 +22,6 @@ int ffmpegAdec_decode(s16 *buf, AVPacket *pkt, int size)
 //	int len = avcodec_decode_audio2( codec_ctx_,
 //													buf, &frame_size_ptr, pkt->data, pkt->size );
 	
-	//TODO: This might cause the video to go out of
-	//			sync for how long the packet is?
 	// if error, skip packet
 	if (len<0)
 	{
