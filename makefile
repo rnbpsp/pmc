@@ -33,6 +33,7 @@ MUSIC_DECODER = \
 		src/decoders/audio_dec.o \
 		src/decoders/sceMp3Aac.o \
 		src/decoders/sceWma.o \
+		src/decoders/sceAtrac3.o \
 		src/decoders/ffmpeg.o
 
 NOW_PLAYING = \

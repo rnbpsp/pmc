@@ -1,14 +1,12 @@
-ff_read_id3v2
-taglib try libjpeg, scejpeg dont work
-	album art // atleast id3v2
+update to ffmpeg 0.8.3 (fixed crash when opening files)
+
+edit oma.c in ffmpeg and add support for atrac3plus
+	use sceAudiocodecDecode for atrac3plus
 
 finish settings //file list ini not reading with minglue-psp.h
-	cpu setup
 	
 show cpu and gpu load
 
-after exting now playing to file browser excess list
-		// happen only if you get to now playing through select or from main menu
-
-topbar: plugged in icon
+after returning to file browser from now playing, cursor will exceed list
+		// happens only if you get to now playing by pressing select or from main menu
 
