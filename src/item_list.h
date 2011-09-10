@@ -37,10 +37,10 @@ class PMC_LIST
 //	bool sel_changed;
 	u32 sel_color, sel_shad, item_color, item_shad;
 	unsigned int last_selection, last_first;
+	int opts, opts_sel;
 public:
 	
 	PMC_LIST(
-//		const char dir[],
 		u32 select_color,
 		u32 select_shad,
 		u32 print_color,
@@ -50,7 +50,9 @@ public:
 		float distance,				// y distance between items
 		float x,
 		float size,					// size of text
-		float ySize
+		float ySize,
+		int options=INTRAFONT_ALIGN_LEFT,
+		int options_sel=(INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_SEESAW)
 	)
 	:	scroll(x),
 		
@@ -68,7 +70,9 @@ public:
 		item_color(print_color),
 		item_shad(print_shad),
 		last_selection(0),
-		last_first(0)
+		last_first(0),
+		opts(options),
+		opts_sel(options_sel)
 	{};
 	//~PMC_LIST(){};
 	
@@ -137,7 +141,7 @@ public:
 	{
 			if (vec.empty())
 			{
-				font->set_style(scale, item_color, item_shad, INTRAFONT_ALIGN_LEFT);
+				font->set_style(scale, item_color, item_shad, opts);
 				font->print("* EMPTY *", xCoord, yfirst);//, width );
 				return;
 			}
@@ -159,14 +163,64 @@ public:
 					
 					if (i==selected)
 					{
-						font->set_style(scale, sel_color, sel_shad, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_SEESAW);
-						scroll = font->print(item, scroll, ypos, width );
+						font->set_style(scale, sel_color, sel_shad, opts_sel);
+						if (opts_sel&0x00002000)
+							scroll = font->print(item, scroll, ypos, width );
+						else
+							scroll = font->print(item, xCoord, ypos, width );
 					}
 					else
 					{
-						sceGuScissor(xCoord,0,xCoord+width,272);
-						font->set_style(scale, item_color, item_shad, INTRAFONT_ALIGN_LEFT);
+						sceGuScissor(xCoord-5,0,xCoord+width,272);
+						font->set_style(scale, item_color, item_shad, opts);
 						font->print(item, xCoord, ypos);
+						sceGuScissor(0, 0, 480, 272);
+					}
+			}
+	};
+
+	template<class T>
+	void print(
+		unsigned int first,			// index of the first item to be printed
+		unsigned int selected,		// index of the selected item from the first to be printed
+		std::vector<T> &vec,
+		const char* (*read_func)(int),
+		int X, // diffferent from xCoord if using align right
+		int options
+	)
+	{
+			if (vec.empty())
+			{
+				font->set_style(scale, item_color, item_shad, options);
+				font->print("* EMPTY *", xCoord, yfirst);//, width );
+				return;
+			}
+	
+			const unsigned int cur_sel = first+selected;
+			if (cur_sel!=last_sel)
+			{
+				last_sel = cur_sel;
+		//		scroll = too_long(cur_sel) ? xCoord+(width/2) : xCoord ;
+					too_long(cur_sel);
+		//		sel_changed = true;
+			}
+			
+			for(unsigned int i=0; i<num && (first+i)<vec.size(); ++i)
+			{
+				//	const char *item = strcmp(list[first+i](), "..") == 0 ? "< . . >" : list[first+i]() ;
+					const char *item = (*read_func)(first+i);
+					const float ypos = yfirst + ((float)i * dist);
+					
+					if (i==selected)
+					{
+						font->set_style(scale, sel_color, sel_shad, options);
+						font->print(item, X, ypos, width );
+					}
+					else
+					{
+						sceGuScissor(xCoord-5,0,xCoord+width,272);
+						font->set_style(scale, item_color, item_shad, options);
+						font->print(item, X, ypos);
 						sceGuScissor(0, 0, 480, 272);
 					}
 			}

@@ -9,6 +9,7 @@
 
 #include "item_list.h"
 #include <pspiofilemgr.h>
+#include <pspumd.h>
 #include "player.h"
 #include "now_playing.h"
 #include "settings.h"
@@ -19,54 +20,7 @@ static char cur_dir[1024] = "";
 extern int show_nowplaying(const char *path=NULL, const char *name=NULL);
 Pmc_ImageTile list_bkg;
 Pmc_ImageTile file_ico[2];
-static bool drives_shown = false;
-
-#define sort_list() if (settings.fileSort_mode!=0) std::sort(files.begin(), files.end())
-static inline
-bool push_folder(std::vector<DIR_ENTRY> &files, const char *dirpath)
-{
-		SceUID fd = sceIoDopen(dirpath);
-		if (fd<0)
-		{
-			show_errorEx("Cannot open folder:\n %s\n\nsceIoDopen returned: 0x%08x, %d", dirpath, fd, fd);
-			return false;
-		}
-		
-		DIR_ENTRY tmp;
-		
-		// get past "."
-		int res = sceIoDread(fd, &(tmp.dirent));
-		
-		//ignore ".."
-		res = sceIoDread(fd, &(tmp.dirent));
-		res = sceIoDread(fd, &(tmp.dirent));
-		
-		files.clear();
-		
-		while ( res > 0 )
-		{
-			if ( tmp.isDir() || ( tmp.isReg() && settings.isNeeded(tmp()) ) )
-				files.push_back(tmp);
-			
-			res = sceIoDread(fd, &(tmp.dirent));
-		}
-		
-		sceIoDclose(fd);
-		
-		if (res<0)
-		{
-			if (files.empty())
-				return false;
-			
-			show_errorEx("Warning:\nSome error occured while reading directory:\n%s" \
-										"\n\nsceIoDread returned: 0x%08x, %d", \
-										dirpath, res, res);
-		}
-		
-		if (!files.empty()) sort_list();
-		
-		return true;
-}
+static bool drives_shown = false, umd_open = false;
 
 // makes sure the last character is a slash so it's easy to add filenames
 static FORCE_INLINE
@@ -79,6 +33,91 @@ void dir_slash (char *dir)
 		strcat(dir, "/");
 	else if ( slash[1] != '\0' )
 		strcat(dir, "/");
+}
+
+#define sort_list() if (settings.fileSort_mode!=0) std::sort(files.begin(), files.end())
+static
+bool push_folder(std::vector<DIR_ENTRY> &files, char *dirpath)
+{
+		const bool isUmd = strncasecmp(dirpath, "disc0:", 6)==0;
+		/*
+		if (isUmd && !umd_open)
+		{
+			if (sceUmdActivate(1, "disc0:")<0) return false; // Mount UMD to disc0: file system
+			if (sceUmdWaitDriveStat(UMD_WAITFORINIT)<0) return false;
+			umd_open = true;
+ 		}
+ 		else if (umd_open)
+ 		{
+			sceUmdDeactivate(1, "disc0:");
+			umd_open = false;
+		}
+		*/
+		dir_slash(dirpath);
+		SceUID fd;
+		{
+			bool umd_retry = false;
+retry_umd:
+		if (isUmd) sceUmdWaitDriveStat(PSP_UMD_READY);
+		fd = sceIoDopen(dirpath);
+		if (fd<0)
+		{
+			if ((fd==0x80020321) && isUmd && !umd_retry)
+			{
+				sceUmdWaitDriveStat(PSP_UMD_READY);
+				umd_retry = true;
+				goto retry_umd;
+			}
+			show_errorEx("Cannot open folder:\n %s\n\nsceIoDopen returned: 0x%08x, %d", dirpath, fd, fd);
+			return false;
+		}
+		}
+		
+		DIR_ENTRY tmp;
+		
+		int res = sceIoDread(fd, &(tmp.dirent));
+		
+		// get past "."
+		// umd root doesn't have "."?
+		if (res>0 && strcmp(tmp(), ".")==0)
+			res = sceIoDread(fd, &(tmp.dirent));
+		
+		//ignore ".."
+		// root folder doesn't have ".."
+		if (res>0 && strcmp(tmp(), "..")==0)
+			res = sceIoDread(fd, &(tmp.dirent));
+		
+		files.clear();
+		
+		while ( res > 0 )
+		{
+			if ( tmp.isDir() || ( tmp.isReg() && settings.isNeeded(tmp()) ) )
+				files.push_back(tmp);
+			
+			if (isUmd) sceUmdWaitDriveStat(PSP_UMD_READY);
+			res = sceIoDread(fd, &(tmp.dirent));
+		}
+		
+		sceIoDclose(fd);
+		
+		if (res<0)
+		{
+			if (files.empty())
+			{
+				show_errorEx("Error:\nAn error occured while reading directory:\n%s" \
+											"\n\nsceIoDread returned: 0x%08x, %d", \
+											dirpath, res, res);
+				return false;
+			}
+			
+			show_errorEx("Warning:\nSome error occured while reading directory:\n%s" \
+										"\n\nsceIoDread returned: 0x%08x, %d", \
+										dirpath, res, res);
+		}
+		
+		if (!files.empty()) sort_list();
+		
+		return true;
 }
 
 static FORCE_INLINE
@@ -139,25 +178,35 @@ bool check_drive(const char *drive)
 	return false;
 }
 
+// NOTE: not inlining this causes sceSystemMemoryManger to crash (accessing 0x2b)
+static //inline
 void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 {
-	const char *drives[3] = {
-		"ef0:/", "ms0:/" , "disc0:/"//,  for audio UMDs
-	};
-
 	files.clear();
 	DIR_ENTRY tmp;
-	for(int i=0; i<3; ++i)
+	if ( check_drive("ef0:/") )
 	{
-		if (check_drive(drives[i]))
-		{
-			tmp = drives[i];
-			files.push_back(tmp);
-		}
-	}/*
-	if (check_drive("host0:/")) // just check one
+		tmp = "ef0:/";
+		files.push_back(tmp);
+	}
+	
+	if ( check_drive("ms0:/") )
 	{
-		char drive[] = "host0:/";
+		tmp = "ms0:/";
+		files.push_back(tmp);
+	}
+	
+	if (sceUmdCheckMedium())
+	{
+		tmp = "disc0:/";
+		files.push_back(tmp);
+		sceUmdWaitDriveStat(UMD_WAITFORDISC);
+	}
+	
+	/*
+	char drive[] = "host0:/";
+	if (check_drive(drive)) // just check one
+	{
 		for( char d='0'; d<'8'; ++d )
 		{
 			drive[4] = d;

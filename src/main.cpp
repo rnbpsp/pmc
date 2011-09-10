@@ -88,7 +88,7 @@ int main()
 	pspDebugScreenPrintf("Loading font...................");
 
 	init_font();
-	font = new PMC_FONT("flash0:/font/ltn0.pgf", INTRAFONT_CACHE_LARGE|INTRAFONT_STRING_CP1252);
+	font = new PMC_FONT("flash0:/font/ltn0.pgf", INTRAFONT_CACHE_LARGE|INTRAFONT_STRING_UTF8);
 	font->set_style(0.8f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
 	
 	pspDebugScreenPrintf("done");

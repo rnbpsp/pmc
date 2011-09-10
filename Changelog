@@ -1,5 +1,16 @@
+r3
+	(*)image buffers uses smaller buffers
+			16pixel aligned width and height instead of powers of 2
+	(*)albm art is now shown. no more black box.
+			only jpg mime type will open
+			images larger than 512*512 will be cropped, for now
+	(*)fixed reading from umd
+			always shown empty before
+	(*)slowed down seeking(up to 4 times slower)
+			thanks to nakano for the suggestion
+	(*)some bug fixes
 r2
-	*fixed crash when opening certain files(unaligned access in ffmpeg)
-	*update to ffmpeg 0.8.2
+	(*)fixed crash when opening certain files(unaligned access in ffmpeg)
+	(*)update to ffmpeg 0.8.2
 r1
-	Initial release
+	(*)Initial release

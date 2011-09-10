@@ -33,7 +33,7 @@ public:
 	void set_style(float scale, u32 color, u32 shadow, u32 options)
 	{
 		size = scale;
-		intraFontSetStyle(this->font, size, color, shadow, options);
+		intraFontSetStyle(this->font, size, color, shadow, options|INTRAFONT_STRING_UTF8);
 	};
 	
 	float print(const char *txt, float x, float y, float width=0.0f, int len=0)
@@ -58,11 +58,6 @@ public:
 	};
 	
 	float txtlen(const char *str){ return intraFontMeasureText(this->font, str); };
-//	bool exceed_width(const char *str, float width)
-//	{
-		//return (txtlen(str)/**this->font->size*/) > (width/**0.85f*/);
-//		return txtlen(str) > width;
-//	};
 };
 extern PMC_FONT *font;
 

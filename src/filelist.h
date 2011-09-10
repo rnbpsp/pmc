@@ -11,7 +11,8 @@ public:
 	
 	bool isReg() const
 	{
-		return FIO_SO_ISREG(dirent.d_stat.st_attr);
+		return FIO_SO_ISREG(dirent.d_stat.st_attr) || \
+						FIO_S_ISREG(dirent.d_stat.st_mode);
 	};
 	
 	bool isDir() const
@@ -44,10 +45,7 @@ public:
 	
 	bool operator==(const char *cmp) const
 	{
-		if ( strcasecmp(this->dirent.d_name, cmp) == 0 )
-			return true;
-		
-		return false;
+		return strcasecmp(this->dirent.d_name, cmp) == 0;
 	};
 	
 	bool operator==(const DIR_ENTRY &in) const

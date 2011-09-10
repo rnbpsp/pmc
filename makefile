@@ -1,8 +1,8 @@
 TARGET = pmc
 
 PMC_GDB_DEBUG = 0
-PMC_DEBUG = 0
-PMC_SHOWFPS = 0
+PMC_DEBUG = 1
+PMC_SHOWFPS = 1
 PMC_PROFILE = 0
 
 # 0.8
@@ -70,7 +70,7 @@ CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
 LIBS = -ljpeg -lavformat -lavcodec -lbz2 -ltaglib -lz -lavutil -lm \
 		-lpspaudio -lpspaudiocodec -lpspasfparser \
 		-lpspfpu -lintraFont_mod -lpspgu -lminIni \
-		-lpsphprm -lpsprtc -lpsppower -lstdc++
+		-lpspumd -lpsphprm -lpsprtc -lpsppower -lstdc++
 # -DEMULATE_FAT_PSP=$(EMULATE_FAT_PSP) 
 #-lminIni -lswscale -lpspvfpu
 
@@ -85,7 +85,7 @@ LDFLAGS = -Wl,-allow-multiple-definition
 ifeq ($(PMC_DEBUG),1)
 
 ifeq ($(PMC_GDB_DEBUG),1)
-CFLAGS += -ggdb -DDEBUG -Winline -Wdisabled-optimization
+CFLAGS += -ggdb3 -DDEBUG -Winline -Wdisabled-optimization
 else
 CFLAGS += -O2 -ggdb -DDEBUG -Wdisabled-optimization
 endif

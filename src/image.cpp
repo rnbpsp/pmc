@@ -13,7 +13,7 @@ extern "C" {
 Pmc_Image *bkg = NULL;
 
 Pmc_Image::~Pmc_Image(){
-	free(data);
+	if (!((u32)data & VRAM_BASE)) free(data);
 //	delete palette;
 };
 
@@ -39,8 +39,8 @@ Pmc_Image::Pmc_Image(int sizeX, int sizeY, u32 color_space, bool alloc)
 	
 	// these two needs to be a power of two
 	// but one can do a workaround(offsets) to save memory(i won't, too much hustle, unless the image is too big)
-	bufwidth = get_nextpow2(sizeX);
-	bufheight = get_nextpow2(sizeY);
+	bufwidth = ALIGN_SIZE(sizeX, 16);
+	bufheight = ALIGN_SIZE(sizeY, 16);
 	
 //	printf("buf width: %d, height: %d\n", bufwidth, bufheight);
 
