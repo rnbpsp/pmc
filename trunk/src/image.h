@@ -84,6 +84,7 @@ public:
 	// doesn't support scaling yet
 	void draw_strip(){ draw(x,y); };
 	void draw_strip(short X, short Y);
+	void draw_stripScl(short X, short Y);
 };
 
 class Pmc_ImageTile {

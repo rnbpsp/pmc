@@ -58,6 +58,12 @@ public:
 		ext = strdup(str);
 		clock = cpu;
 	};
+	
+	FORCE_INLINE
+	const char *operator()()
+	{
+		return ext;
+	};
 };
 
 class PMC_CPU

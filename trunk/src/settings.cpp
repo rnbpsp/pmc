@@ -5,8 +5,10 @@
 #include "drawing.h"
 #include "font.h"
 #include "player.h"
+#include "item_list.h"
 
 PMC_SETTINGS settings;
+extern void show_notdone();
 
 #include <minIni.h>
 #include <psputility.h>
@@ -16,11 +18,31 @@ PMC_SETTINGS settings;
 
 #define SET_MAIN 0
 #define SET_EXTS 1
+#define SET_BOOKMARK 2
 
+/*
+static show_osk(const char *desc, bool ext)
+{
+	unsigned short description[32], ;
+	
+	while ()
+	{
+			draw_colorRect( RGB(0x36,0x36,0x36),RGB(0x36,0x36,0x36), \
+											RGB(32,32,32), RGB(32,32,32), \
+											0, 0, 480, 272 );
+								//			RGB(0x6f,0x6f,0x6f),RGB(0x6f,0x6f,0x6f), \
+			
+			draw_colorRect( RGB(0x61,0xb4,0xff),RGB(0x61,0xb4,0xff), \
+											RGB(0,0,0x6f),RGB(0,0,0x6f), \
+											0, 230, 480, 8 );
+			
+	}
+}
+*/
 static FORCE_INLINE
 int next_submenu(int current)
 {
-	if (current==SET_EXTS)
+	if (current==SET_BOOKMARK)
 		return SET_MAIN;
 	else return current+1;
 }
@@ -29,14 +51,95 @@ static FORCE_INLINE
 int prev_submenu(int current)
 {
 	if (current==SET_MAIN)
-		return SET_EXTS;
+		return SET_BOOKMARK;
 	else return current-1;
 }
 
-extern void show_notdone();
+static
+const char *ext_vec_helper(int pos)
+{
+	static char cpu_str[10];
+	pmc_itoa(settings.exts[pos].clock, cpu_str, 10);
+	return cpu_str;
+}
+static void show_exts()
+{
+	PMC_LIST list(COL_BLACK, COL_WHITE, COL_WHITE, COL_BLACK,
+								9, 85, font->get_height()*0.8f + .5f, 40, 0.8f, 480-40,
+								INTRAFONT_ALIGN_LEFT, INTRAFONT_ALIGN_LEFT);
+								
+	list.fixup<NEEDED_EXT>(settings.exts);
+	
+	unsigned cur_sel = 0, top_item = 0;
+	bool ext_menu = true;
+	while (state.running)
+	{
+		if (gu_start())
+		{
+				draw_colorRect( RGB(0x36,0x36,0x36),RGB(0x36,0x36,0x36), \
+												RGB(32,32,32), RGB(32,32,32), \
+												0, 0, 480, 272 );
+									//			RGB(0x6f,0x6f,0x6f),RGB(0x6f,0x6f,0x6f), \
+				
+				draw_colorRect( RGB(0x61,0xb4,0xff),RGB(0x61,0xb4,0xff), \
+												RGB(0,0,0x6f),RGB(0,0,0x6f), \
+												0, 230, 480, 8 );
+				
+				if (list.show_scroll())
+				{
+					float scroll_size = 145*list.scroll_size(settings.exts.size());
+					scroll_size = scroll_size < 5 ? 5 : scroll_size;
+					draw_colorRect( RGB(0x51,0xa4,0xff),RGB(10,10,0x6f), \
+													RGB(0x51,0xa4,0xff),RGB(10,10,0x6f), \
+												20, 75+((145-scroll_size)*list.scroll_pos(top_item)), \
+												7, scroll_size );
+				}
+				
+				font->set_style(0.8f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
+				font->printf(475, 267, "Press %c to return", settings.cancel_char);
+				
+				font->set_style(0.8f, RGB(50,128,192), COL_WHITE, INTRAFONT_ALIGN_CENTER);
+				font->print("File Extensions and CPU Speed", 480/2, 60);
+				
+				list.print<NEEDED_EXT>(top_item, cur_sel, settings.exts);
+				list.print<NEEDED_EXT>(top_item, cur_sel, settings.exts, &ext_vec_helper, 480-30, INTRAFONT_ALIGN_RIGHT);
+				
+				show_topbar("Settings");
+				gu_end();
+				
+				ctrl.read();
+				if (ctrl.pressed.ok)
+				{/*
+					if (ext_menu)
+						show_osk();
+					else
+						show_osk();*/
+					show_notdone();
+				}
+				else if (ctrl.pressed.up)		list.up(top_item, cur_sel);
+				else if (ctrl.pressed.down)	list.down(top_item, cur_sel);
+				else if (ctrl.pressed.left)	list.page_up(top_item, cur_sel);
+				else if (ctrl.pressed.right)	list.page_down(top_item, cur_sel);
+				else if (ctrl.released.cancel)break;
+				
+				gu_sync();
+				flip_screen();
+		}
+		else wait_vblank();
+	}
+}
+
 void PMC_SETTINGS::show_menu()
 {
+	ctrl.autorepeat = true;
+	ctrl.autorepeat_delay = 10;
+	ctrl.autorepeat_interval = 5;
+	ctrl.autorepeat_mask = (CTRL_RIGHT|CTRL_LEFT|CTRL_UP|CTRL_DOWN);
+	
 	player.close();
+	
+	this->cpu = 166;
+	
 	int cur_ico = 0;
 	while (state.running)
 	{
@@ -56,13 +159,14 @@ void PMC_SETTINGS::show_menu()
 				
 				const char *setmenu_names[] = {
 					"Main Settings",
-					"File Extensions and CPU Speed"
+					"File Extensions and CPU Speed",
+					"Bookmarks Manager"
 				};
 				
-				for(int i=0; i<2; ++i)
+				for(int i=0; i<3; ++i)
 				{
 					if (cur_ico==i)
-						font->set_style(0.8f, RGB(50,128,192), COL_WHITE, INTRAFONT_ALIGN_CENTER);
+						font->set_style(0.8f, RGB(50,128,192), 0, INTRAFONT_ALIGN_CENTER);
 					else
 						font->set_style(0.8f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_CENTER);
 					
@@ -81,8 +185,11 @@ void PMC_SETTINGS::show_menu()
 				{
 					switch (cur_ico)
 					{
-						case SET_MAIN:
 						case SET_EXTS:
+							show_exts();
+							break;
+						case SET_MAIN:
+						case SET_BOOKMARK:
 						default:
 							show_notdone();
 							break;
@@ -178,6 +285,12 @@ void PMC_SETTINGS::refresh()
 			tmp = "OGG";
 			exts.push_back(tmp);
 			tmp = "FLAC";
+			exts.push_back(tmp);
+			tmp = "AT3";
+			exts.push_back(tmp);
+			tmp = "WAV";
+			exts.push_back(tmp);
+			tmp = "AA3";
 			exts.push_back(tmp);
 		}
 	}

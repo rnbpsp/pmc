@@ -51,6 +51,11 @@ typedef struct
 	float x,y,z;
 }imgPrecise_vertex;
 
+typedef struct
+{
+	float u,v, x,y,z;
+}image_vertexf;
+
 #pragma pack()
 
 TEMPLATE
@@ -69,16 +74,18 @@ T *gu_allocVertC(int num)
 void Pmc_Image::draw(short X, short Y) {
 	if (!isValid()) return;
 	
-	image_vertex *vertex = gu_allocVert<image_vertex>(2);
-	
 	if (cur_texture != data || intrafont_used)
 	{
 		cur_texture = data;
 		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 		sceGuTexMode(type, 0, 0, swizzled);
-		sceGuTexImage(0, bufwidth, bufheight, bufwidth, data);
+		sceGuTexImage(0, get_nextpow2(bufwidth<512?bufwidth:512),
+										get_nextpow2(bufheight<512?bufheight:512),
+											bufwidth, data);
 		intrafont_used = false;
 	}
+	
+	image_vertex *vertex = gu_allocVert<image_vertex>(2);
 	
 	vertex[0].u = 0;
 	vertex[0].v = 0;
@@ -86,8 +93,8 @@ void Pmc_Image::draw(short X, short Y) {
 	vertex[0].y = Y;
 	vertex[0].z = 0;
 
-	vertex[1].u = width;
-	vertex[1].v = height;
+	vertex[1].u = width<512?width:512;
+	vertex[1].v = height<512?height:512;
 	vertex[1].x = X + scaleX;
 	vertex[1].y = Y + scaleY;
 	vertex[1].z = 0;
@@ -103,7 +110,9 @@ void Pmc_Image::draw_strip(short X, short Y) {
 		cur_texture = data;
 		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 		sceGuTexMode(type, 0, 0, swizzled);
-		sceGuTexImage(0, bufwidth, bufheight, bufwidth, data);
+		sceGuTexImage(0, get_nextpow2(bufwidth<512?bufwidth:512),
+										get_nextpow2(bufheight<512?bufheight:512),
+											bufwidth, data);
 		intrafont_used = false;
 	}
 	
@@ -137,28 +146,79 @@ void Pmc_Image::draw_strip(short X, short Y) {
 	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, vert_num, 0, vertex);
 }
 
+void Pmc_Image::draw_stripScl(short X, short Y)
+{
+	if (!isValid()) return;
+	
+	if (cur_texture != data || intrafont_used)
+	{
+		cur_texture = data;
+		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+		sceGuTexMode(type, 0, 0, swizzled);
+		sceGuTexImage(0, get_nextpow2(bufwidth<512?bufwidth:512),
+										get_nextpow2(bufheight<512?bufheight:512),
+											bufwidth, data);
+		intrafont_used = false;
+	}
+	
+	int vert_num = (ALIGN_SIZE(width,64)>>6/*/64*/)*2;
+	imgPrecise_vertex *vertex = gu_allocVertC<imgPrecise_vertex>(vert_num);
+	
+	const float strip = 64.f*(scaleX/(float)width);
+	const float h_scaled = height*(scaleY/(float)height);
+	float xCoord = X;
+	for(int i=0, k=0; i<width; k++)
+	{
+		vertex[k].u = i;
+		vertex[k].v = 0;
+		vertex[k].x = xCoord;
+		vertex[k].y = Y;
+		vertex[k].z = 0;
+		k++;
+		
+		vertex[k].u = i += 64;
+		vertex[k].v = height;
+		vertex[k].x = xCoord += strip;
+		vertex[k].y = Y+h_scaled;
+		vertex[k].z = 0;
+	}
+	
+	if (width&63) //width%64
+	{
+		const int last_index = vert_num-1;
+		vertex[last_index].u = width;
+		vertex[last_index].x = X+scaleX;
+	}
+	
+	pmc_wb(vertex, vert_num*sizeof(imgPrecise_vertex));
+	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_32BITF|GU_TRANSFORM_2D, vert_num, 0, vertex);
+}
+
+
+
 /*
-	TODO
-		Since Pmc_Image is used to allocate large images,
-		it'll always do powers of 2 which uses excess memory
-		as width only needs to be 16byte(or pixels?) aligned
-*//*
 void drawImgStrip_large(Pmc_Image *img, int x, int y)
 {
 	if (!img->isValid()) return;
 	
+	if (img->width<=512 && img->height<=512)
+	{
+		img->draw_stripScl(x,y);
+		return;
+	}
+	
+	sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+	sceGuTexMode(img->type, 0, 0, img->swizzled);
+	
 	const float scaleX = img->scaleX/(float)img->width;
 	const float scaleY = img->scaleY/(float)img->height;
-	const float strip = 64*scaleX;
+	const float strip = 64.f*scaleX;
 	
 	intrafont_used = true;
 	for(int h=0; h<img->height; h+=512)
 	{
 		for(int w=0; w<img->width; w+=512)
 		{
-			sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
-			sceGuTexMode(img->type, 0, 0, img->swizzled);
-			
 			{
 			const int bufheight = get_nextpow2(pmc_min<int>(img->bufheight-h,512));
 			const int bufwidth = get_nextpow2(pmc_min<int>(img->bufwidth-w,512));
@@ -167,7 +227,7 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 			
 	const int width = pmc_min<int>(img->width-w,512);
 	const int height = pmc_min<int>(img->height-h,512);
-	const float dst_height = height*scaleY;
+	const float dst_height = (float)height*scaleY;
 	
 				int vert_num = (ALIGN_SIZE(width,64)>>6)*2;
 				imgPrecise_vertex *vertex = gu_allocVertC<imgPrecise_vertex>(vert_num);
@@ -183,9 +243,9 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 					vertex[k].z = 0;
 					k++;
 					
-					vertex[k].u = i+=64;
+					vertex[k].u = i += 64;
 					vertex[k].v = height;
-					vertex[k].x = X+=strip;
+					vertex[k].x = X += strip;
 					vertex[k].y = Y+dst_height;
 					vertex[k].z = 0;
 				}
@@ -194,7 +254,7 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 				{
 					const int last_index = vert_num-1;
 					vertex[last_index].u = width;
-					vertex[last_index].x = X - strip + (width*scaleX);
+					vertex[last_index].x = X + ((float)width*scaleX);
 				}
 				
 				pmc_wb(vertex, vert_num*sizeof(imgPrecise_vertex));
@@ -213,7 +273,9 @@ void Pmc_ImageTile::draw(short X, short Y) {
 		cur_texture = base->data;
 		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 		sceGuTexMode(base->type, 0, 0, base->swizzled);
-		sceGuTexImage(0, base->bufwidth, base->bufheight, base->bufwidth, base->data);
+		sceGuTexImage(0, get_nextpow2(base->bufwidth<512?base->bufwidth:512),
+										get_nextpow2(base->bufheight<512?base->bufheight:512),
+											base->bufwidth, base->data);
 		intrafont_used = false;
 	}
 	
@@ -239,7 +301,9 @@ void Pmc_ImageTile::draw_strip(short X, short Y) {
 		cur_texture = base->data;
 		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 		sceGuTexMode(base->type, 0, 0, base->swizzled);
-		sceGuTexImage(0, base->bufwidth, base->bufheight, base->bufwidth, base->data);
+		sceGuTexImage(0, get_nextpow2(base->bufwidth<512?base->bufwidth:512),
+										get_nextpow2(base->bufheight<512?base->bufheight:512),
+											base->bufwidth, base->data);
 		intrafont_used = false;
 	}
 	

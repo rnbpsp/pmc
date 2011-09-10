@@ -367,14 +367,9 @@ PMC_PLAYER::close()
 		av_free(io_ctx->buffer);
 		av_freep(&io_ctx);
 	}
-/*	
-	if (album_art)
-	{
-		if ((u32)album_art->data & VRAM_BASE)
-			album_art->data = NULL;
-*/		delete album_art;
-		album_art = NULL;
-//	}
+	
+	delete album_art;
+	album_art = NULL;
 	
 	parser = PMC_PARSER_FFMPEG;
 	
@@ -493,7 +488,7 @@ PMC_PLAYER::get_str(int tag)
 				const int seconds = time_sec % 60;
 				time_sec /= 60;
 				const int minutes = time_sec % 60;
-				time_sec /= 60; // costs just a register move so put it here
+				time_sec /= 60;
 				
 				int64_t dur_sec =  duration;
 				const int dur_seconds = dur_sec % 60;

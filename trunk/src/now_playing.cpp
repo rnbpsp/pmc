@@ -71,12 +71,11 @@ openit:
 			
 			if (player.album_art)
 			{
+				sceGuTexFilter(GU_LINEAR,GU_LINEAR);
 				sceGuTexWrap(GU_REPEAT, GU_REPEAT);
-				player.album_art->draw(325, 66);
+				player.album_art->draw_stripScl(325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
 				sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			}
-		//	else
-		//		draw_fillRect(RGB(0,0,0), 325, 66, 128, 128);
 			
 			player_icons[PL_ICON_STAT_BASE].draw(21, 174);
 			player_icons[PL_ICON_BAR_BASE].draw(21+75, 174+40);
@@ -104,15 +103,15 @@ openit:
 			font->set_style(0.9f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_LEFT);
 			titleX = font->print(player.get_str(TAG_TITLE), titleX, 85, text_width);
 			
-			font->set_style(0.6f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT|INTRAFONT_STRING_UTF8);
+			font->set_style(0.6f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT/*|INTRAFONT_STRING_UTF8*/);
 			
-			sceGuScissor(30, 0, text_width, 272);
+			sceGuScissor(25, 0, 30+text_width, 272);
 			for (int i=1; i<6; ++i)
-				font->print(player.get_str(i), 30.f, 95+((font->get_height()+3.25f)*i));
+				font->print(player.get_str(i), 30.f, 90+((font->get_height()+3.25f)*i));
 			sceGuScissor(0, 0, 480, 272);
 			}
 			
-			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT|INTRAFONT_STRING_ASCII);
+			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT/*|INTRAFONT_STRING_CP437*/);
 			font->print(player.get_str(TIMER_OVER_DURATION), 453, 210);
 			
 			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT);
