@@ -194,9 +194,6 @@ void Pmc_Image::draw_stripScl(short X, short Y)
 	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_32BITF|GU_TRANSFORM_2D, vert_num, 0, vertex);
 }
 
-
-
-/*
 void drawImgStrip_large(Pmc_Image *img, int x, int y)
 {
 	if (!img->isValid()) return;
@@ -222,7 +219,7 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 			{
 			const int bufheight = get_nextpow2(pmc_min<int>(img->bufheight-h,512));
 			const int bufwidth = get_nextpow2(pmc_min<int>(img->bufwidth-w,512));
-			sceGuTexImage(0, bufwidth, bufheight, img->bufwidth, (u32*)img->data + (h*img->bufwidth)+w);
+			sceGuTexImage(0, bufwidth, bufheight, img->bufwidth, ((u32*)img->data) + (h*img->bufwidth)+(img->swizzled?w*8:w));
 			}
 			
 	const int width = pmc_min<int>(img->width-w,512);
@@ -232,19 +229,19 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 				int vert_num = (ALIGN_SIZE(width,64)>>6)*2;
 				imgPrecise_vertex *vertex = gu_allocVertC<imgPrecise_vertex>(vert_num);
 				
-				const float Y = img->y + (h*scaleY);
-				float X = img->x + (w*scaleX);
-				for(int i=0, k=0; i<width; k++)
+				const float Y = y + ((float)h*scaleY);
+				float X = x + ((float)w*scaleX);
+				for(int i=w, k=0; i<w+width; k++)
 				{
 					vertex[k].u = i;
-					vertex[k].v = 0;
+					vertex[k].v = h;
 					vertex[k].x = X;
 					vertex[k].y = Y;
 					vertex[k].z = 0;
 					k++;
 					
 					vertex[k].u = i += 64;
-					vertex[k].v = height;
+					vertex[k].v = height+h;
 					vertex[k].x = X += strip;
 					vertex[k].y = Y+dst_height;
 					vertex[k].z = 0;
@@ -253,8 +250,8 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 				if (width&63) //width%64
 				{
 					const int last_index = vert_num-1;
-					vertex[last_index].u = width;
-					vertex[last_index].x = X + ((float)width*scaleX);
+					vertex[last_index].u = w+width;
+					vertex[last_index].x = x + (w*scaleX) + (width*scaleX);
 				}
 				
 				pmc_wb(vertex, vert_num*sizeof(imgPrecise_vertex));
@@ -262,7 +259,7 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 		}
 	}
 }
-*/
+
 void Pmc_ImageTile::draw(short X, short Y) {
 
 	if (!base->isValid()) return;

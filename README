@@ -14,9 +14,7 @@ NOTES:
  will play correctly:
     48000, 44100, 32000, 24000, 22050, 16000, 12000, 11050, 8000
  
- and only MP3, WMAv2(only from *.wma files), ATRAC3 and
- AAC(except from files with adts headers) are hardware
- accelerated.
+ and no support for ATRAC3+ yet.
  
  Since FFMpeg supports a lot of container formats and codecs,
  I do not have the time to test if all of it works correctly.

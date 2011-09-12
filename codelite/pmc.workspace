@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeLite_Workspace Name="pmc" Database="./pmc.tags">
+  <Project Name="pmc" Path="pmc.project" Active="Yes"/>
+  <Project Name="intrafont" Path="intrafont.project" Active="No"/>
+  <Project Name="taglib" Path="taglib.project" Active="No"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Project Name="pmc" ConfigName="Debug"/>
+      <Project Name="intrafont" ConfigName="Debug"/>
+      <Project Name="taglib" ConfigName="Debug"/>
+    </WorkspaceConfiguration>
+    <WorkspaceConfiguration Name="Release" Selected="yes">
+      <Project Name="pmc" ConfigName="Release"/>
+      <Project Name="intrafont" ConfigName="Release"/>
+      <Project Name="taglib" ConfigName="Release"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CodeLite_Workspace>

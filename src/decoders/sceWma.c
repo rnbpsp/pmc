@@ -99,15 +99,13 @@ SceOff asf_seek_cb(void *userdata, void *buf, SceOff offset, int whence)
 
 int check_ifwma(AVIOContext* fd)
 {
-	char wma_guid_buf[16] = "";
-	if ( avio_read(fd, &wma_guid_buf, 16) != 16 )
+	unsigned char wma_guid_buf[16];
+	if ( avio_read(fd, wma_guid_buf, 16) != 16 )
 		return 0;
+	avio_seek(fd, 0, SEEK_SET);
 	
 	if ( memcmp(wma_guid_buf, WMA_GUID, 16)!=0 )
-	{
-		printf("Not a WMA file\n");
 		return 0;
-	}
 	
 	return 1;
 }
@@ -170,15 +168,17 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 	parser->pNeedMemBuffer = SceWma.need_mem_buffer;
 	parser->iUnk3356 = 0x00000000;
 	
-	ret = sceAsfInitParser(parser, io_ctx, &avio_read, /*&sceIoRead, */&asf_seek_cb);
+	ret = sceAsfInitParser(parser, io_ctx, &avio_read, &asf_seek_cb);
 	if ( ret < 0 )
 	{
 		printf("sceAsfInitParser() = 0x%08x\n", ret);
 		goto error;
 	}
 	
-//	wma_channels = *((u16*)need_mem_buffer); 
-	custom_info[NFF_TAG_SAMPRATE] = *((u32*)(SceWma.need_mem_buffer+4)); 
+//	wma_channels = *((u16*)need_mem_buffer);
+	custom_info[NFF_TAG_SAMPRATE] = *((int*)(SceWma.need_mem_buffer+4));
+	if (custom_info[NFF_TAG_SAMPRATE]<0)
+		goto error;
 	
 	wma_avg_bytes_per_sec = *((u32*)(SceWma.need_mem_buffer+8));
 	custom_info[NFF_TAG_BITRATE] = wma_avg_bytes_per_sec * 8;

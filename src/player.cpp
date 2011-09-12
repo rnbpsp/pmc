@@ -48,6 +48,12 @@ retry_success:
 	return false;
 }
 
+// save packet data for cleaning up
+static struct
+{
+	u8 *data;
+	int size;
+}packet_temp;
 bool
 PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
 {
@@ -68,10 +74,18 @@ PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
 			
 			if (packet.size<=0)
 			{
+					packet.data = packet_temp.data;
+					packet.size = packet_temp.size;
+//					if (audio_decoder.isSceCodec() && codec_ctx->codec_id==CODEC_ID_AAC)
+//						stream_ptr->need_parsing = AV_PARSE_HEADERS;
 					while( av_read_frame(format_ctx, &packet) >= 0 )
 					{
 						if( packet.stream_index == audio_stream )
+						{
+							packet_temp.data = packet.data;
+							packet_temp.size = packet.size;
 							goto dec;
+						}
 						
 						else av_free_packet(&packet);
 						
@@ -118,7 +132,9 @@ int audio_main(SceSize argc, void* argv)
 	// put this here so it'll exist until this thread is done
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	
+	packet_temp.data = NULL;;
+	packet_temp.size = 0;
+
 	int curbuf = 0;
 	while(player.playing != PLAYER_STOPPED)
 	{
@@ -154,7 +170,11 @@ int audio_main(SceSize argc, void* argv)
 		}
 		curbuf ^= 1;
 	}
-
+	
+	pkt.data = packet_temp.data;
+	pkt.size = packet_temp.size;
+	av_free_packet(&pkt);
+	
 	sceKernelExitThread(0);
 	return 0;
 }
@@ -236,23 +256,15 @@ PMC_PLAYER::open(const char *path, const char *name)
 	}
 	
 	printf("opening file\n");
-	if (strcasecmp(get_ext(name), "wma")==0 && check_ifwma(io_ctx))
+	if (/*strcasecmp(get_ext(name), "wma")==0 &&*/ check_ifwma(io_ctx))
 		parser = PMC_PARSER_SCEWMA;
 	else
 	{
 ffmpeg_fallback:
 		parser = PMC_PARSER_FFMPEG;
-	//	int ret = 0;
-	//	if (!pmc_ff_open(format_ctx, io_ctx, full_path))
-	//	{
-	//		error_openfile();
-	//	}
 		
 		format_ctx = avformat_alloc_context();
-		if (!format_ctx)
-		{
-			error_openfile();
-		}
+		if (!format_ctx) error_openfile();
 		
 		format_ctx->pb = io_ctx;
 		format_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
@@ -306,12 +318,15 @@ ffmpeg_fallback:
 		error_openfile();
 	}
 	
-	channel = sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE), 2);
+	{
+	const int samprate = codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE);
+	channel = sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, samprate, 2);
 	if (channel<0)
 	{
 		printf("Cannot reserve audio channel: 0x%08x\n", channel);
-		show_error("Error: Cannot reserve audio channel.");
+		show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, samprate);
 		error_openfile();
+	}
 	}
 	
 	athread = sceKernelCreateThread("Audio Player Thread", \
@@ -322,8 +337,14 @@ ffmpeg_fallback:
 		error_openfile();
 	}
 	
+		
+	
 	if (stream_ptr!=NULL)
+	{
 		duration = av_rescale(stream_ptr->duration, stream_ptr->time_base.num, stream_ptr->time_base.den); //stream_ptr->duration * av_q2d(stream_ptr->time_base);
+//		if (audio_decoder.isSceCodec() && codec_ctx->codec_id==CODEC_ID_AAC && codec_ctx->codec_tag!=0)
+//			stream_ptr->need_parsing = AVSTREAM_PARSE_HEADERS;
+	}
 	else
 		duration = audio_decoder.get_int(NFF_TAG_DURATION);
 	
@@ -458,7 +479,7 @@ PMC_PLAYER::get_str(int tag)
 				const int seconds = cur_sec % 60;
 				cur_sec /= 60;
 				const int minutes = cur_sec % 60;
-				cur_sec /= 60; // costs just a register move so put it here
+				cur_sec /= 60;
 				
 				if ( duration < (60*60) )
 					sprintf(temp_str, "%d:%02d", minutes, seconds);
@@ -526,20 +547,11 @@ PMC_PLAYER::get_str(int tag)
 void
 PMC_PLAYER::seek(int64_t seconds)
 {
-	playing |= PLAYER_PAUSED; // to pause decoder thread
+	playing |= PLAYER_PAUSED; // pause decoder thread
 	sceKernelDelayThread(1000);
 	
 	if (this->parser==PMC_PARSER_FFMPEG)
 	{
-	/*
-		register int seek_flag = 0;
-		if (seconds<0) seek_flag = AVSEEK_FLAG_BACKWARD;
-		seconds = __builtin_abs(seconds);
-		
-		int64_t ts = seconds / av_q2d(stream_ptr->time_base);
-		
-		av_seek_frame(format_ctx, audio_stream, ts, seek_flag);
-	*/
 		int64_t target = av_rescale(seconds, stream_ptr->time_base.den, stream_ptr->time_base.num);
 		if (avformat_seek_file(format_ctx, audio_stream, 0, target, target, AVSEEK_FLAG_FRAME) <0 )
 		{

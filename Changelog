@@ -1,5 +1,12 @@
+CHANGELOG
+	versions and changes are listed from latest(top) to oldest
+
 r3
+	(*)hardware decode aac from files with adts header(*.aac only)
+	(*)update to ffmpeg 0.8.3
+	(*)fixed memleak for codecs that doesn't consume all packet.data in one call to decoding function
 	(*)added atrac3 hardware decoder
+	(*)large images are now fully displayed but with seams between 512*512 boundaries
 	(*)images now use smaller buffers
 			16pixel aligned width and height instead of powers of 2
 	(*)albm art is now shown. no more black box.
@@ -10,8 +17,10 @@ r3
 	(*)slowed down seeking(up to 4 times slower)
 			thanks to nakano for the suggestion
 	(*)some bug fixes
+	
 r2
 	(*)fixed crash when opening certain files(unaligned access in ffmpeg)
 	(*)update to ffmpeg 0.8.2
+	
 r1
 	(*)Initial release

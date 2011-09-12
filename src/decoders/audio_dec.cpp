@@ -46,10 +46,7 @@ AUDIO_DECODERS::open(
 					audio_dec = &sceMp3Aac;
 				break;
 			case CODEC_ID_AAC:
-				// TODO: use aac_adtstoasc bsf
-				if (strcasecmp(get_ext(filepath), "aac")==0) break;
-				
-				if (sceMp3Aac_open(codec_ctx, PSP_CODEC_AAC))
+				if (sceMp3Aac_open(codec_ctx, PSP_CODEC_AAC|((strcasecmp(get_ext(filepath), "aac")==0)?AAC_IS_ADTS:0)))
 					audio_dec = &sceMp3Aac;
 				break;
 			case CODEC_ID_ATRAC3:
@@ -58,7 +55,7 @@ AUDIO_DECODERS::open(
 				break;
 		/*
 			case CODEC_ID_ATRAC3P:
-				if (sceAt3Aa3_open(codec_ctx, PSP_CODEC_AT3PLUS))
+				if (sceAtrac3p_open(codec_ctx))
 					audio_dec = &sceAt3Aa3;
 				break;
 		*/
@@ -67,9 +64,9 @@ AUDIO_DECODERS::open(
 		}
 	}
 	
-	if ( !audio_dec && codec_ctx!=NULL)
+	if ( !audio_dec )
 	{
-		if ( ffmpegAdec_open(codec_ctx) )
+		if ( codec_ctx!=NULL && ffmpegAdec_open(codec_ctx) )
 			audio_dec = &ffmpegAudio;
 	// no need to allocate buffers without an open decoder
 		else return false;
@@ -157,7 +154,7 @@ AUDIO_DECODERS::flush(AVCodecContext *codec_ctx)
   
   // only needed if we use ffmpeg for decoding
   // else will crash
-  if ( codec_ctx && (audio_dec==&ffmpegAudio) )
+  if ( codec_ctx && !isSceCodec() )
     avcodec_flush_buffers(codec_ctx);
 }
 

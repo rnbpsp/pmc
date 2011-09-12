@@ -20,7 +20,8 @@ static char cur_dir[1024] = "";
 extern int show_nowplaying(const char *path=NULL, const char *name=NULL);
 Pmc_ImageTile list_bkg;
 Pmc_ImageTile file_ico[2];
-static bool drives_shown = false, umd_open = false;
+static bool drives_shown = false/*, umd_open = false*/;
+extern void show_notdone();
 
 // makes sure the last character is a slash so it's easy to add filenames
 static FORCE_INLINE
@@ -83,7 +84,7 @@ retry_umd:
 			res = sceIoDread(fd, &(tmp.dirent));
 		
 		//ignore ".."
-		// root folder doesn't have ".."
+		// root of a drive doesn't have ".."
 		if (res>0 && strcmp(tmp(), "..")==0)
 			res = sceIoDread(fd, &(tmp.dirent));
 		
@@ -146,7 +147,7 @@ const char *get_basedir(const char *path)
 }
 
 
-static FORCE_INLINE
+static
 void select_item(std::vector<DIR_ENTRY> &files,
 									PMC_LIST &list,
 									const char *item,
@@ -269,6 +270,91 @@ bool go_UpOneDir(std::vector<DIR_ENTRY> &files, \
 
 #define NUMOF_ITEMS 12
 #define LIST_YPOS 95
+
+
+#define CTX_OPEN 1
+#define CTX_REFRESH 2
+
+static int file_ctxmenu(const char *path, const char *file)
+{
+	int sel_item = 0;
+	float dirX = 24;
+	int cursor_bar = (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*sel_item);
+			const bool file_isNeeded = settings.isNeeded(file,false);
+	while (state.running)
+	{
+			if ( gu_start() )
+			{
+				draw_colorRect( RGB(0x36,0x36,0x36),RGB(0x36,0x36,0x36), \
+												RGB(32,32,32), RGB(32,32,32), \
+												0, 0, 480, 272 );
+				
+				list_bkg.draw_strip(0,40);
+				
+				draw_colorRect( RGB(0x36,0x36,0x36),RGB(0x36,0x36,0x36), \
+												RGB(32,32,32), RGB(32,32,32), \
+												20, 60, 440, 20);
+				
+				font->set_style(0.9f, COL_WHITE, 0, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_LEFT);
+				dirX = font->print(file, dirX, 76, 430);
+				
+				{
+					#define BASE_INCREMENT 2
+					const int cursor_dest = (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*sel_item);
+					if (cursor_bar!=cursor_dest)
+					{
+						const int bar_inc = __builtin_abs(cursor_bar-cursor_dest)>10?BASE_INCREMENT*4:BASE_INCREMENT;
+						if (cursor_bar<cursor_dest)
+							cursor_bar = cursor_bar+bar_inc>cursor_dest?cursor_dest:cursor_bar+bar_inc;
+						else
+							cursor_bar = cursor_bar-bar_inc<cursor_dest?cursor_dest:cursor_bar-bar_inc;
+					}
+					
+					player_icons[PL_ICON_BAR].scaleX = 414+20;
+					player_icons[PL_ICON_BAR].draw(24, cursor_bar);
+				}
+				
+				font->set_style(0.6f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_CENTER);
+				font->print("Delete", 480/2, LIST_YPOS+((font->get_ySize()*0.6f)+2.f));
+				font->print("Refresh current directory", 480/2, LIST_YPOS+(4*((font->get_ySize()*0.6f)+2.f)));
+				
+			if (file_isNeeded)
+				font->set_style(0.6f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_CENTER);
+			else
+				font->set_style(0.6f, RGB(120,120,120), 0, INTRAFONT_ALIGN_CENTER);
+				
+				font->print("Play", 480/2, LIST_YPOS);
+				font->print("Bookmarks", 480/2, LIST_YPOS+(2*((font->get_ySize()*0.6f)+2.f)));
+				font->print("Add to playlist", 480/2, LIST_YPOS+(3*((font->get_ySize()*0.6f)+2.f)));
+				
+				show_topbar("File Browser");
+				
+				gu_end();
+				gu_sync();
+				
+				flip_screen();
+			}
+			else wait_vblank();
+			
+			ctrl.read();
+			if (ctrl.released.cancel||ctrl.pressed.square) return 0;
+			else if (ctrl.pressed.up) sel_item = sel_item==0?4:sel_item-1;
+			else if (ctrl.pressed.down) sel_item = sel_item==4?0:sel_item+1;
+			else if (ctrl.pressed.ok)
+			{
+				switch (sel_item)
+				{
+					case 0: return file_isNeeded?CTX_OPEN:0;
+					case 2:
+					case 3: if (file_isNeeded) show_notdone(); return 0;
+					case 4: return CTX_REFRESH;
+					case 1: if (strncasecmp(path, "disc0:", 6)) show_notdone(); return 0;
+				}
+			}
+	}
+	return 0;
+}
+
 void show_filelist(bool show_playing)
 {
 	if (show_playing && player.playing==PLAYER_STOPPED)
@@ -296,7 +382,6 @@ void show_filelist(bool show_playing)
 	
 	unsigned int top_item = 0;
 	unsigned int sel_item = 0;
-	
 	
 //	ctrl.flush();
 	ctrl.autorepeat = true;
@@ -390,13 +475,6 @@ void show_filelist(bool show_playing)
 					go_UpOneDir(files, file_list, top_item, sel_item);
 					cursor_bar = (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*sel_item);
 			}
-			else if (ctrl.pressed.square && strcmp(cur_dir, "* DRIVES *"))	//refresh current list
-			{
-					dir_slash(cur_dir);
-					push_folder(cur_dir);
-					file_list.fixup(files);
-					cursor_bar = (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*sel_item);
-			}
 			else if (ctrl.pressed.select && player.playing!=PLAYER_STOPPED)
 			{
 					if (strcasecmp(cur_dir, player.filepath))
@@ -416,29 +494,34 @@ void show_filelist(bool show_playing)
 			else if (ctrl.pressed.down)	file_list.down(top_item, sel_item);
 			else if (ctrl.pressed.left)	file_list.page_up(top_item, sel_item);
 			else if (ctrl.pressed.right)	file_list.page_down(top_item, sel_item);
-			/*
-			if (player.filename!=NULL && player.playing==PLAYER_STOPPED)
-			{
-				if (strcasecmp(cur_dir, player.filepath))
-				{
-					strcpy(cur_dir, player.filepath);
-					dir_slash(cur_dir);
-					
-					push_folder(cur_dir);
-					file_list.fixup(files);
-				}
-				select_item(files, file_list, player.filename, top_item, sel_item);
-				player_ret = 1;
-				continue;
-			}*/
 		}
-		if (ctrl.pressed.ok || player_ret)
+		if (ctrl.pressed.value&(CTRL_OK|CTRL_SQUARE) || player_ret)
 		{
+				if (files.empty()) continue;
+				
 				int cur_item = top_item+sel_item;
 				
 				// temp workaround for some bug, see TODO
 				if (cur_item>=(int)files.size())
 					cur_item = files.empty() ? 0 : files.size()-1;
+				
+				if (ctrl.pressed.square)
+				{
+					int ctx_res = 0;
+					if (files[cur_item].isReg())
+						ctx_res = file_ctxmenu(cur_dir, files[cur_item]());
+					
+					switch (ctx_res)
+					{
+						case CTX_OPEN: break;
+						case CTX_REFRESH:
+							dir_slash(cur_dir);
+							push_folder(cur_dir);
+							file_list.fixup(files);
+							cursor_bar = (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*sel_item);
+						default: continue;
+					}
+				}
 				
 				if (player_ret)
 				{/*
@@ -478,9 +561,6 @@ void show_filelist(bool show_playing)
 					
 					file_list.select_item(cur_item, top_item, sel_item);
 				}
-				
-				if (files.empty())
-					continue;
 				
 				if ( files[cur_item].isDir() )
 				{

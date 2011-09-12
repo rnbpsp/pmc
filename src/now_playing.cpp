@@ -73,7 +73,8 @@ openit:
 			{
 				sceGuTexFilter(GU_LINEAR,GU_LINEAR);
 				sceGuTexWrap(GU_REPEAT, GU_REPEAT);
-				player.album_art->draw_stripScl(325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
+		//		player.album_art->draw_stripScl(325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
+				drawImgStrip_large(player.album_art, 325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
 				sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			}
 			
