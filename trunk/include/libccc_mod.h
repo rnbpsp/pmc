@@ -19,7 +19,7 @@ extern "C" {
  *  @{
  */
 
-typedef unsigned short cccUCS2; 
+typedef unsigned short cccUCS2;
 typedef unsigned char  cccCode;
 
 /* supported codepages */

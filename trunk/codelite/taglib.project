@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeLite_Project Name="taglib" InternalType="">
+  <Plugins>
+    <Plugin Name="qmake">
+      <![CDATA[00010001N0005Debug000000000000]]>
+    </Plugin>
+  </Plugins>
+  <VirtualDirectory Name="ogg">
+    <VirtualDirectory Name="flac">
+      <File Name="../taglib/ogg/flac/oggflacfile.cpp"/>
+      <File Name="../taglib/ogg/flac/oggflacfile.h"/>
+    </VirtualDirectory>
+    <VirtualDirectory Name="speex">
+      <File Name="../taglib/ogg/speex/speexfile.cpp"/>
+      <File Name="../taglib/ogg/speex/speexfile.h"/>
+      <File Name="../taglib/ogg/speex/speexproperties.cpp"/>
+      <File Name="../taglib/ogg/speex/speexproperties.h"/>
+    </VirtualDirectory>
+    <VirtualDirectory Name="vorbis">
+      <File Name="../taglib/ogg/vorbis/vorbisfile.cpp"/>
+      <File Name="../taglib/ogg/vorbis/vorbisfile.h"/>
+      <File Name="../taglib/ogg/vorbis/vorbisproperties.cpp"/>
+      <File Name="../taglib/ogg/vorbis/vorbisproperties.h"/>
+    </VirtualDirectory>
+    <File Name="../taglib/ogg/oggfile.cpp"/>
+    <File Name="../taglib/ogg/oggfile.h"/>
+    <File Name="../taglib/ogg/oggpage.cpp"/>
+    <File Name="../taglib/ogg/oggpage.h"/>
+    <File Name="../taglib/ogg/oggpageheader.cpp"/>
+    <File Name="../taglib/ogg/oggpageheader.h"/>
+    <File Name="../taglib/ogg/xiphcomment.cpp"/>
+    <File Name="../taglib/ogg/xiphcomment.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="mpeg">
+    <VirtualDirectory Name="id3v2">
+      <VirtualDirectory Name="frames">
+        <File Name="../taglib/mpeg/id3v2/frames/attachedpictureframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/attachedpictureframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/commentsframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/commentsframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/generalencapsulatedobjectframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/generalencapsulatedobjectframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/relativevolumeframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/relativevolumeframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/textidentificationframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/textidentificationframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/uniquefileidentifierframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/uniquefileidentifierframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/unknownframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/unknownframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/unsynchronizedlyricsframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/unsynchronizedlyricsframe.h"/>
+        <File Name="../taglib/mpeg/id3v2/frames/urllinkframe.cpp"/>
+        <File Name="../taglib/mpeg/id3v2/frames/urllinkframe.h"/>
+      </VirtualDirectory>
+      <File Name="../taglib/mpeg/id3v2/id3v2extendedheader.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2extendedheader.h"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2footer.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2footer.h"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2frame.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2frame.h"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2framefactory.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2framefactory.h"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2header.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2header.h"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2synchdata.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2synchdata.h"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2tag.cpp"/>
+      <File Name="../taglib/mpeg/id3v2/id3v2tag.h"/>
+    </VirtualDirectory>
+    <VirtualDirectory Name="id3v1">
+      <File Name="../taglib/mpeg/id3v1/id3v1genres.cpp"/>
+      <File Name="../taglib/mpeg/id3v1/id3v1genres.h"/>
+      <File Name="../taglib/mpeg/id3v1/id3v1tag.cpp"/>
+      <File Name="../taglib/mpeg/id3v1/id3v1tag.h"/>
+    </VirtualDirectory>
+    <File Name="../taglib/mpeg/mpegfile.cpp"/>
+    <File Name="../taglib/mpeg/mpegfile.h"/>
+    <File Name="../taglib/mpeg/mpegheader.cpp"/>
+    <File Name="../taglib/mpeg/mpegheader.h"/>
+    <File Name="../taglib/mpeg/mpegproperties.cpp"/>
+    <File Name="../taglib/mpeg/mpegproperties.h"/>
+    <File Name="../taglib/mpeg/xingheader.cpp"/>
+    <File Name="../taglib/mpeg/xingheader.h"/>
+  </VirtualDirectory>
+  <Description/>
+  <Dependencies/>
+  <VirtualDirectory Name="ape">
+    <File Name="../taglib/ape/apefooter.cpp"/>
+    <File Name="../taglib/ape/apefooter.h"/>
+    <File Name="../taglib/ape/apeitem.cpp"/>
+    <File Name="../taglib/ape/apeitem.h"/>
+    <File Name="../taglib/ape/apetag.cpp"/>
+    <File Name="../taglib/ape/apetag.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="flac">
+    <File Name="../taglib/flac/flacfile.cpp"/>
+    <File Name="../taglib/flac/flacfile.h"/>
+    <File Name="../taglib/flac/flacproperties.cpp"/>
+    <File Name="../taglib/flac/flacproperties.h"/>
+    <File Name="../taglib/flac/flactag.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="mpc">
+    <File Name="../taglib/mpc/combinedtag.h"/>
+    <File Name="../taglib/mpc/mpcfile.cpp"/>
+    <File Name="../taglib/mpc/mpcfile.h"/>
+    <File Name="../taglib/mpc/mpcproperties.cpp"/>
+    <File Name="../taglib/mpc/mpcproperties.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="toolkit">
+    <File Name="../taglib/toolkit/taglib.h"/>
+    <File Name="../taglib/toolkit/tbytevector.cpp"/>
+    <File Name="../taglib/toolkit/tbytevector.h"/>
+    <File Name="../taglib/toolkit/tbytevectorlist.cpp"/>
+    <File Name="../taglib/toolkit/tbytevectorlist.h"/>
+    <File Name="../taglib/toolkit/tdebug.cpp"/>
+    <File Name="../taglib/toolkit/tdebug.h"/>
+    <File Name="../taglib/toolkit/tfile.cpp"/>
+    <File Name="../taglib/toolkit/tfile.h"/>
+    <File Name="../taglib/toolkit/tlist.h"/>
+    <File Name="../taglib/toolkit/tlist.tcc"/>
+    <File Name="../taglib/toolkit/tmap.h"/>
+    <File Name="../taglib/toolkit/tmap.tcc"/>
+    <File Name="../taglib/toolkit/tstring.cpp"/>
+    <File Name="../taglib/toolkit/tstring.h"/>
+    <File Name="../taglib/toolkit/tstringlist.cpp"/>
+    <File Name="../taglib/toolkit/tstringlist.h"/>
+    <File Name="../taglib/toolkit/unicode.cpp"/>
+    <File Name="../taglib/toolkit/unicode.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="trueaudio">
+    <File Name="../taglib/trueaudio/trueaudiofile.cpp"/>
+    <File Name="../taglib/trueaudio/trueaudiofile.h"/>
+    <File Name="../taglib/trueaudio/trueaudioproperties.cpp"/>
+    <File Name="../taglib/trueaudio/trueaudioproperties.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="wavpack">
+    <File Name="../taglib/wavpack/wavpackfile.cpp"/>
+    <File Name="../taglib/wavpack/wavpackfile.h"/>
+    <File Name="../taglib/wavpack/wavpackproperties.cpp"/>
+    <File Name="../taglib/wavpack/wavpackproperties.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="taglib">
+    <File Name="../taglib/audioproperties.cpp"/>
+    <File Name="../taglib/audioproperties.h"/>
+    <File Name="../taglib/config.h"/>
+    <File Name="../taglib/fileref.cpp"/>
+    <File Name="../taglib/fileref.h"/>
+    <File Name="../taglib/libtaglib.a"/>
+    <File Name="../taglib/Makefile"/>
+    <File Name="../taglib/tag.cpp"/>
+    <File Name="../taglib/tag.h"/>
+    <File Name="../taglib/taglib_export.h"/>
+    <File Name="../taglib/tagunion.cpp"/>
+    <File Name="../taglib/tagunion.h"/>
+  </VirtualDirectory>
+  <Settings Type="Dynamic Library">
+    <GlobalSettings>
+      <Compiler Options="" C_Options="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="">
+        <LibraryPath Value="."/>
+      </Linker>
+      <ResourceCompiler Options=""/>
+    </GlobalSettings>
+    <Configuration Name="Debug" CompilerType="pspsdk" DebuggerType="GNU gdb debugger" Type="Dynamic Library" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
+      <Compiler Options="-g" C_Options="-g" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" UseDifferentPCHFlags="no" PCHFlags="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="" Required="yes"/>
+      <ResourceCompiler Options="" Required="no"/>
+      <General OutputFile="" IntermediateDirectory="./" Command="" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes"/>
+      <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
+        <![CDATA[]]>
+      </Environment>
+      <Debugger IsRemote="no" RemoteHostName="" RemoteHostPort="" DebuggerPath="">
+        <PostConnectCommands/>
+        <StartupCommands/>
+      </Debugger>
+      <PreBuild/>
+      <PostBuild/>
+      <CustomBuild Enabled="yes">
+        <RebuildCommand/>
+        <CleanCommand>make clean</CleanCommand>
+        <BuildCommand>make</BuildCommand>
+        <PreprocessFileCommand/>
+        <SingleFileCommand/>
+        <MakefileGenerationCommand/>
+        <ThirdPartyToolName>None</ThirdPartyToolName>
+        <WorkingDirectory>$(WorkspacePath)</WorkingDirectory>
+      </CustomBuild>
+      <AdditionalRules>
+        <CustomPostBuild/>
+        <CustomPreBuild/>
+      </AdditionalRules>
+      <Completion>
+        <ClangCmpFlags/>
+        <ClangPP/>
+        <SearchPaths/>
+      </Completion>
+    </Configuration>
+    <Configuration Name="Release" CompilerType="pspsdk" DebuggerType="GNU gdb debugger" Type="Dynamic Library" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
+      <Compiler Options="" C_Options="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" UseDifferentPCHFlags="no" PCHFlags="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="-O2" Required="yes"/>
+      <ResourceCompiler Options="" Required="no"/>
+      <General OutputFile="" IntermediateDirectory="./Release" Command="" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes"/>
+      <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
+        <![CDATA[]]>
+      </Environment>
+      <Debugger IsRemote="no" RemoteHostName="" RemoteHostPort="" DebuggerPath="">
+        <PostConnectCommands/>
+        <StartupCommands/>
+      </Debugger>
+      <PreBuild/>
+      <PostBuild/>
+      <CustomBuild Enabled="yes">
+        <RebuildCommand/>
+        <CleanCommand>make clean</CleanCommand>
+        <BuildCommand>make</BuildCommand>
+        <PreprocessFileCommand/>
+        <SingleFileCommand/>
+        <MakefileGenerationCommand/>
+        <ThirdPartyToolName>None</ThirdPartyToolName>
+        <WorkingDirectory>$(WorkspacePath)</WorkingDirectory>
+      </CustomBuild>
+      <AdditionalRules>
+        <CustomPostBuild/>
+        <CustomPreBuild/>
+      </AdditionalRules>
+      <Completion>
+        <ClangCmpFlags/>
+        <ClangPP/>
+        <SearchPaths/>
+      </Completion>
+    </Configuration>
+  </Settings>
+</CodeLite_Project>

@@ -1,10 +1,17 @@
+compile ffmpeg into a prx and use like a shared library
+	waaaaaay faster compilation(link time) of the main app
+
 update to ffmpeg 0.8.3 (fixed crash when opening files)
+
+use fatfs for reading ms0: usign msstor:
+
+fix seams between 512px boundary on large images
 
 edit oma.c in ffmpeg and add support for atrac3plus
 	use sceAudiocodecDecode for atrac3plus
 
-finish settings //file list ini not reading with minglue-psp.h
-	
+finish settings //ini not reading with minglue-psp.h
+
 show cpu and gpu load
 
 after returning to file browser from now playing, cursor will exceed list

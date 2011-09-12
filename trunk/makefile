@@ -1,14 +1,12 @@
 TARGET = pmc
 
-PMC_GDB_DEBUG = 0
+PMC_GDB_DEBUG = 1
 PMC_DEBUG = 1
 PMC_SHOWFPS = 1
 PMC_PROFILE = 0
 
 # 0.8
-# 0.8.1-fat
-# 0.8.1-slim
-FFMPEG_PORT = 0.8.2
+FFMPEG_PORT = 0.8
 
 
 MAIN = \

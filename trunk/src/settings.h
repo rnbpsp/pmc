@@ -114,7 +114,9 @@ public:
 #define SET_OK_CROSS 1
 	//int ok_button;
 	char ok_char, cancel_char;
-
+	
+	int code_page;
+	
 	PMC_SETTINGS()
 	:	show_unknown(false),
 		dynamic_clock(true),

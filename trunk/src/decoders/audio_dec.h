@@ -42,6 +42,11 @@ public:
 	
 	void close();
 	int decode(short *buf, AVPacket *pkt, int size);
+	bool isSceCodec()
+	{
+		extern const AUDIO_DECODER ffmpegAudio;
+		return audio_dec!=&ffmpegAudio;
+	};
 	
 	int64_t seek(int64_t seconds);
 	
@@ -58,6 +63,7 @@ public:
 #define C_AUDIOBUF_MAX_SIZE ( (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2 )
 #define S_AUDIOBUF_MAX_SIZE ( C_AUDIOBUF_MAX_SIZE / 2 )
 #define PSP_CODEC_WMA 0x1005
+#define AAC_IS_ADTS 0x10000
 
 // for tags
 // used by the now playing gui

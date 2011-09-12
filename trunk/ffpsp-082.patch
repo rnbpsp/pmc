@@ -2,7 +2,7 @@ diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/ffmpeg-pmc.sh ffmpeg-0.8.2-ps
 --- ffmpeg-0.8.2/ffmpeg-pmc.sh	1970-01-01 08:00:00 +0800
 +++ ffmpeg-0.8.2-psp/ffmpeg-pmc.sh	2011-08-17 01:00:36 +0800
 @@ -0,0 +1,14 @@
-+./configure --prefix=C:/projects/music_player/ffmpeg-psp-0.8.2-slim \
++./configure --prefix=C:/projects/music_player/ffmpeg-psp-0.8-music \
 +--cross-prefix=psp- --enable-cross-compile --target-os=linux \
 +--arch=mips --enable-hardcoded-tables --disable-fastdiv \
 +--enable-gpl --disable-avfilter --disable-postproc \
@@ -25,7 +25,7 @@ diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavformat/sol.c ffmpeg-0.8.
      /* check file header */
      uint16_t magic;
 -    magic=av_le2ne16(*((uint16_t*)p->buf));
-+    magic=av_le2ne16((int16_t)(p->buf[0]<<8|p->buf[1]));
++    magic=av_le2ne16((int16_t)(p->buf[1]<<8|p->buf[0]));
      if ((magic == 0x0B8D || magic == 0x0C0D || magic == 0x0C8D) &&
          p->buf[2] == 'S' && p->buf[3] == 'O' &&
          p->buf[4] == 'L' && p->buf[5] == 0)

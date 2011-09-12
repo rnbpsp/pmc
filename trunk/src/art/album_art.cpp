@@ -46,9 +46,10 @@ Pmc_Image *load_albumArt(const char *file)
 	
 	if (img->width==128 && img->height==128) return img;
 	
-	const float scale = 128.f/(float)pmc_min<int>(pmc_max<int>(img->height,img->width),512);
-	if (img->width>512) img->width = 512;
-	if (img->height>512) img->height = 512;
+//	const float scale = 128.f/(float)pmc_min<int>(pmc_max<int>(img->height,img->width),512);
+	const float scale = 128.f/(float)pmc_max<int>(img->height,img->width);
+//	if (img->width>512) img->width = 512;
+//	if (img->height>512) img->height = 512;
 	img->scaleX = img->width*scale;
 	img->scaleY = img->height*scale;
 	
