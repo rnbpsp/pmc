@@ -37,6 +37,12 @@ static const struct {
 	{"UTF-8",			CCC_CPUTF8}
 };
 
+u32
+PMC_SETTINGS::get_codepage()
+{
+	cp_struct[code_page].cp;
+}
+
 /*
 static show_osk(const char *desc, bool ext)
 {
@@ -79,6 +85,7 @@ const char *ext_vec_helper(int pos)
 	pmc_itoa(settings.exts[pos].clock, cpu_str, 10);
 	return cpu_str;
 }
+
 static void show_exts()
 {
 	PMC_LIST list(COL_BLACK, COL_WHITE, COL_WHITE, COL_BLACK,

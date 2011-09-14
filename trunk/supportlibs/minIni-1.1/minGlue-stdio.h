@@ -20,8 +20,6 @@
 
 /* map required file I/O types and functions to the standard C library */
 #include <stdio.h>
-#define INI_BUFFERSIZE 1024
-#define INI_LINETERM "\r\n"
 
 #define INI_FILETYPE                  FILE*
 #define ini_openread(filename,file)   ((*(file) = fopen((filename),"r")) != NULL)

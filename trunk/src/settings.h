@@ -130,6 +130,7 @@ public:
 	void refresh();
 	bool isNeeded(const char *file, bool list=true);
 	void show_menu();
+	u32 get_codepage();
 };
 extern PMC_SETTINGS settings;
 

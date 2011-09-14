@@ -14,8 +14,7 @@ void sceAtrac3_close()
 {
 	at3codec_ctx = NULL;
 	sceAudiocodecReleaseEDRAM(sceAtrac3_buf);
-	int i=0;
-	for(;i<65;++i) sceAtrac3_buf[i] = 0;
+	memset(sceAtrac3_buf, 0, 65);
 	
 	sceUtilityUnloadAvModule(PSP_AV_MODULE_AVCODEC);
 }

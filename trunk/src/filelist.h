@@ -4,10 +4,16 @@
 class DIR_ENTRY
 {
 public:
-	SceIoDirent dirent;// TODO: just get the filename and attribute
-	DIR_ENTRY(){ memset(this, 0, sizeof(DIR_ENTRY)); };
+	SceIoDirent dirent;
+	DIR_ENTRY(){ memset(&dirent, 0, sizeof(SceIoDirent)); };
 	DIR_ENTRY(const DIR_ENTRY& in){ memcpy(&dirent, &(in.dirent), sizeof(SceIoDirent)); };
 	DIR_ENTRY(SceIoDirent& in){ memcpy(&dirent, &in, sizeof(SceIoDirent)); };
+	DIR_ENTRY(const char *in){
+		memset(&dirent, 0, sizeof(SceIoDirent));
+		strcpy(dirent.d_name, in);
+		dirent.d_stat.st_attr = FIO_SO_IFDIR;
+		dirent.d_stat.st_mode = FIO_S_IFDIR;
+	};
 	
 	bool isReg() const
 	{
@@ -22,15 +28,16 @@ public:
 	};
 	
 	/// overloaded operators
-
+/*
 	DIR_ENTRY& operator=(const char* in) 
 	{
+		memset(&dirent, 0, sizeof(SceIoDirent));
 		strcpy(dirent.d_name, in);
 		dirent.d_stat.st_attr = FIO_SO_IFDIR;
 		dirent.d_stat.st_mode = FIO_S_IFDIR;
 		return *this;
 	};
-
+*/
 	DIR_ENTRY& operator=(const DIR_ENTRY& in) 
 	{
 		memcpy(&dirent, &(in.dirent), sizeof(SceIoDirent));

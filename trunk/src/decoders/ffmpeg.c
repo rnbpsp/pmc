@@ -15,7 +15,6 @@ void ffmpegAdec_close()
 static
 int ffmpegAdec_decode(s16 *buf, AVPacket *pkt, int size)
 {
-	//printf("ffmpeg decoder called.\n");
 	int frame_size_ptr = size;
 	int len = avcodec_decode_audio3( codec_ctx_,
 													buf, &frame_size_ptr, pkt );

@@ -145,12 +145,9 @@ void *av_malloc(size_t size)
 {
 	return memalign(64, size);
 }
-
-
 // the ff. functions are for ffmpeg 0.6 and up
 // won't compile w/o these (will get undefined references)
 
-// it's kinda unsafe as usec is unsigned and sceKernelDelayThread takes signed int as arg
 #include <unistd.h>
 int usleep(	useconds_t usec)
 {
@@ -164,6 +161,8 @@ int isfinitef( float f )
 {
 	return !pspFpuIsInf(f) && !pspFpuIsNaN(f);
 }
+
+
 
 // the ff are for 0.9.6 of minpspw
 // w/c doesn't have fast math routines

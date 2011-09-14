@@ -101,6 +101,7 @@ openit:
 			
 			{
 			const int text_width = player.album_art!=NULL ? 295 : 295+128 ;
+			font->set_encoding(CCC_CPUTF8);
 			font->set_style(0.9f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_LEFT);
 			titleX = font->print(player.get_str(TAG_TITLE), titleX, 85, text_width);
 			
@@ -110,9 +111,10 @@ openit:
 			for (int i=1; i<6; ++i)
 				font->print(player.get_str(i), 30.f, 90+((font->get_height()+3.25f)*i));
 			sceGuScissor(0, 0, 480, 272);
+			font->set_encoding(settings.get_codepage());
 			}
 			
-			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT/*|INTRAFONT_STRING_CP437*/);
+			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
 			font->print(player.get_str(TIMER_OVER_DURATION), 453, 210);
 			
 			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT);

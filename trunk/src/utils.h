@@ -1,14 +1,14 @@
 #ifndef __PMC_UTILS_H__
 #define __PMC_UTILS_H__
 
-#ifdef __cplusplus
-#include "main.h"
 #define UNCACHED_ADDRESS_SPACE 0x40000000
-
 #define FORCE_INLINE inline __attribute__((always_inline))
 #define ALIGN_DECL(align) __attribute__((aligned(align)))
 #define ALIGN_ADDR(s, align) (( (u32)(s) ) & ~(align-1))
 #define ALIGN_SIZE(s, align) (( ((u32)(s)) + align-1) & ~(align-1))
+
+#ifdef __cplusplus
+#include "main.h"
 
 FORCE_INLINE
 void pmc_invalidate(void *ptr, size_t size)

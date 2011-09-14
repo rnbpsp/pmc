@@ -58,8 +58,8 @@ bool push_folder(std::vector<DIR_ENTRY> &files, char *dirpath)
 		SceUID fd;
 		{
 			bool umd_retry = false;
-retry_umd:
 		if (isUmd) sceUmdWaitDriveStat(PSP_UMD_READY);
+retry_umd:
 		fd = sceIoDopen(dirpath);
 		if (fd<0)
 		{
@@ -179,7 +179,7 @@ bool check_drive(const char *drive)
 	return false;
 }
 
-// NOTE: not inlining this causes sceSystemMemoryManger to crash (accessing 0x2b)
+// NOTE: crashing when app is compiled without optimizations
 static //inline
 void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 {
@@ -187,19 +187,19 @@ void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 	DIR_ENTRY tmp;
 	if ( check_drive("ef0:/") )
 	{
-		tmp = "ef0:/";
+		DIR_ENTRY tmp("ef0:/");
 		files.push_back(tmp);
 	}
 	
-	if ( check_drive("ms0:/") )
+	if ( check_drive("ms0:/") /* crash here */ )
 	{
-		tmp = "ms0:/";
+		DIR_ENTRY tmp("ms0:/");
 		files.push_back(tmp);
 	}
 	
 	if (sceUmdCheckMedium())
 	{
-		tmp = "disc0:/";
+		DIR_ENTRY tmp("disc0:/");
 		files.push_back(tmp);
 		sceUmdWaitDriveStat(UMD_WAITFORDISC);
 	}
@@ -211,7 +211,7 @@ void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 		for( char d='0'; d<'8'; ++d )
 		{
 			drive[4] = d;
-			tmp = drive;
+			DIR_ENTRY tmp(drive);
 			files.push_back(tmp);
 		}
 	}
@@ -241,9 +241,9 @@ bool go_UpOneDir(std::vector<DIR_ENTRY> &files, \
 	
 	if (isRoot(cur_dir))
 	{
-		dir_slash(cur_dir);
 		list_drives(files, file_list);
 		file_list.fixup(files);
+		dir_slash(cur_dir);
 		select_item(files, file_list, cur_dir, top, sel);
 		strcpy(cur_dir, "* DRIVES *");
 		return true;

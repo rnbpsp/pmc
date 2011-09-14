@@ -73,7 +73,7 @@ int sceMp3Aac_decode(s16 *buf, AVPacket *pkt, int size)
 	if (bsf_ctx)
 	{
 		av_bitstream_filter_filter(bsf_ctx, codec_ctx_, NULL,
-													(u8*)&data, (int*)&data_size,
+													(u8**)&data, (int*)&data_size,
 													pkt->data, pkt->size, 0);
 	}
 	else

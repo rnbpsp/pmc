@@ -1,6 +1,8 @@
 TARGET = pmc
 
-PMC_GDB_DEBUG = 1
+#causes drive checking code to crash
+PMC_GDB_DEBUG = 0
+
 PMC_DEBUG = 1
 PMC_SHOWFPS = 1
 PMC_PROFILE = 0
@@ -26,12 +28,14 @@ MAIN = \
 MUSIC_PLAYER = \
 		src/player.o \
 		src/art/album_art.o
+#		ffmpeg-prx/ffmpegMusic.o
 
 MUSIC_DECODER = \
 		src/decoders/audio_dec.o \
 		src/decoders/sceMp3Aac.o \
 		src/decoders/sceWma.o \
 		src/decoders/sceAtrac3.o \
+		src/decoders/sceAtrac3p.o \
 		src/decoders/ffmpeg.o
 
 NOW_PLAYING = \
@@ -65,17 +69,17 @@ TAGLIB_DEFINES = -DHAVE_ZLIB=1 -DNDEBUG -DTAGLIB_WITH_ASF -DTAGLIB_WITH_MP4 -DTA
 # $(TAGLIB_DEFINES) 
 CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
 				-D_SHOWFPS=$(PMC_SHOWFPS) -D_PROFILE=$(PMC_PROFILE) \
-				$(MIPS_OPTIMIZATIONS)
-LIBS = -ljpeg -lavformat -lavcodec -lbz2 -ltaglib -lz -lavutil -lm \
+				$(MIPS_OPTIMIZATIONS) $(TAGLIB_DEFINES)
+LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lavutil -lm \
 		-lpspaudio -lpspaudiocodec -lpspasfparser \
 		-lpspfpu -lintraFont_mod -lpspgu -lminIni \
 		-lpspumd -lpsphprm -lpsprtc -lpsppower -lstdc++
-# -DEMULATE_FAT_PSP=$(EMULATE_FAT_PSP) 
 #-lminIni -lswscale -lpspvfpu
+#
 
 LIBDIR = ./lib ./taglib ./lib/ffmpeg-$(FFMPEG_PORT)
 INCDIR = ./include ./taglib ./include/ffmpeg-$(FFMPEG_PORT) ./cooleyesBridge \
-			./taglib ./taglib/toolkit .taglib/ape \
+			./taglib ./taglib/toolkit ./taglib/ape \
 			./taglib/mpeg ./taglib/mpeg/id3v1 \
 			./taglib/mpeg/id3v2
 
@@ -86,7 +90,7 @@ ifeq ($(PMC_DEBUG),1)
 ifeq ($(PMC_GDB_DEBUG),1)
 CFLAGS += -ggdb3 -DDEBUG -Winline -Wdisabled-optimization
 else
-CFLAGS += -O2 -ggdb -DDEBUG -Wdisabled-optimization
+CFLAGS += -O2 -ggdb3 -DDEBUG -Wdisabled-optimization
 endif
 
 ifeq ($(PMC_PROFILE), 1)

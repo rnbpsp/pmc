@@ -10,12 +10,14 @@ extern "C"
 	int sceMp3Aac_open(AVCodecContext *ctx, int type);
 	int sceWma_open(const char *filename, AVIOContext* io_ctx);
 	int sceAtrac3_open(AVCodecContext *ctx);
+	int sceAtrac3p_open(AVCodecContext *ctx);
 }
 
 extern const AUDIO_DECODER ffmpegAudio;
 extern const AUDIO_DECODER sceMp3Aac;
 extern const AUDIO_DECODER sceAsfWma;
 extern const AUDIO_DECODER sceAtrac3;
+extern const AUDIO_DECODER sceAtrac3p;
 
 char custom_tag[4][256];
 int custom_info[4];
@@ -53,12 +55,10 @@ AUDIO_DECODERS::open(
 				if (sceAtrac3_open(codec_ctx))
 					audio_dec = &sceAtrac3;
 				break;
-		/*
 			case CODEC_ID_ATRAC3P:
 				if (sceAtrac3p_open(codec_ctx))
-					audio_dec = &sceAt3Aa3;
+					audio_dec = &sceAtrac3p;
 				break;
-		*/
 			default:
 				break;
 		}
