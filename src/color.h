@@ -250,7 +250,7 @@ inline u16 ABGR4(u8 a, u8 b, u8 g, u8 r)				{ return RGBA4(r,g,b,a); }
 inline u16 BGR6(u8 b, u8 g, u8 r) 							{ return RGB6(r,g,b); }
 
 // used to pass colors to functions as gcc don't optimize
-// use these for constants
+// use these only for constants
 inline u32 RGB(u8 r, u8 g, u8 b, u8 a=0xff)
 {
 	return (r) | (g<<8) | (b<<16) | (a<<24);

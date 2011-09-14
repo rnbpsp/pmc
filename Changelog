@@ -2,6 +2,9 @@ CHANGELOG
 	versions and changes are listed from latest(top) to oldest
 
 r3
+	(*)metadata is now rendered as UTF8(as it should be)
+	(*)added option to set code page ini settings.ini
+	(*)added atrac3+ decoder in hardware(except from RM files)
 	(*)hardware decode aac from files with adts header(*.aac only)
 	(*)update to ffmpeg 0.8.3
 	(*)fixed memleak for codecs that doesn't consume all packet.data in one call to decoding function

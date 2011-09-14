@@ -1,14 +1,14 @@
+update ffmpeg patch
+	editted lavf/riff.c @ line 541
+	editted lavf/oma.c @ line 145
+
 compile ffmpeg into a prx and use like a shared library
 	waaaaaay faster compilation(link time) of the main app
+	only export needed functions
 
-update to ffmpeg 0.8.3 (fixed crash when opening files)
-
-use fatfs for reading ms0: usign msstor:
+use fatfs for reading "ms0:" using "msstor:"
 
 fix seams between 512px boundary on large images
-
-edit oma.c in ffmpeg and add support for atrac3plus
-	use sceAudiocodecDecode for atrac3plus
 
 finish settings //ini not reading with minglue-psp.h
 

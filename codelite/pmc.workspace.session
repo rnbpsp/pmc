@@ -1,48 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Session Name="C:\projects\pmc\codelite\pmc.workspace">
-  <int Value="1" Name="m_selectedTab"/>
+  <int Value="0" Name="m_selectedTab"/>
   <wxString Value="C:\projects\pmc\codelite\pmc.workspace" Name="m_workspaceName"/>
   <TabInfoArray Name="TabInfoArray">
     <TabInfo>
-      <wxString Value="C:\projects\pmc\src\decoders\audio_dec.cpp" Name="FileName"/>
-      <int Value="62" Name="FirstVisibleLine"/>
-      <int Value="74" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-    </TabInfo>
-    <TabInfo>
       <wxString Value="C:\projects\pmc\src\player.cpp" Name="FileName"/>
-      <int Value="326" Name="FirstVisibleLine"/>
-      <int Value="332" Name="CurrentLine"/>
+      <int Value="237" Name="FirstVisibleLine"/>
+      <int Value="243" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
     </TabInfo>
     <TabInfo>
-      <wxString Value="c:\projects\pmc\src\settings.h" Name="FileName"/>
-      <int Value="140" Name="FirstVisibleLine"/>
+      <wxString Value="C:\projects\pmc\src\settings.h" Name="FileName"/>
+      <int Value="141" Name="FirstVisibleLine"/>
       <int Value="148" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
     </TabInfo>
     <TabInfo>
-      <wxString Value="C:\projects\pmc\src\decoders\audio_dec.h" Name="FileName"/>
-      <int Value="64" Name="FirstVisibleLine"/>
-      <int Value="76" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="c:\projects\pmc\src\callbacks.cpp" Name="FileName"/>
-      <int Value="72" Name="FirstVisibleLine"/>
-      <int Value="75" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="C:\projects\pmc\src\decoders\sceWma.c" Name="FileName"/>
-      <int Value="174" Name="FirstVisibleLine"/>
-      <int Value="181" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="C:\projects\pmc\src\decoders\ffmpeg.c" Name="FileName"/>
-      <int Value="41" Name="FirstVisibleLine"/>
-      <int Value="48" Name="CurrentLine"/>
+      <wxString Value="c:\projects\pmc\ffmpeg-prx\ffmpegMusic.S" Name="FileName"/>
+      <int Value="11" Name="FirstVisibleLine"/>
+      <int Value="28" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
     </TabInfo>
   </TabInfoArray>
@@ -50,7 +26,7 @@
     <long Value="1" Name="Count"/>
     <SerializedObject Name="Breakpoint0">
       <wxString Value="C:\projects\pmc\src\player.cpp" Name="file"/>
-      <int Value="333" Name="lineno"/>
+      <int Value="238" Name="lineno"/>
       <wxString Value="" Name="function_name"/>
       <wxString Value="" Name="memory_address"/>
       <int Value="1" Name="bp_type"/>

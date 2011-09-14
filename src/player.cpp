@@ -275,7 +275,12 @@ ffmpeg_fallback:
 			// it is freed on error
 			// see avformat_open_input@avformat.h
 			format_ctx = NULL;
-			printf("Error open file \"%s\", ret = %d\n", path, ret);
+	//		char err_buf[256] = "";
+			printf("Error open file \"%s\", ret = 0x%08x, nomem = %d\n", path, ret, ret == AVERROR(ENOMEM)?1:0);
+	//		av_strerror(ret, err_buf, 256);
+	//		err_buf[254] = '\n';
+	//		err_buf[255] = '\0';
+	//		printf(err_buf);
 			error_openfile();
 		}
 		
@@ -337,8 +342,6 @@ ffmpeg_fallback:
 		error_openfile();
 	}
 	
-		
-	
 	if (stream_ptr!=NULL)
 	{
 		duration = av_rescale(stream_ptr->duration, stream_ptr->time_base.num, stream_ptr->time_base.den); //stream_ptr->duration * av_q2d(stream_ptr->time_base);
@@ -366,7 +369,7 @@ PMC_PLAYER::close()
 	
 	if (athread>=0) sceKernelTerminateDeleteThread(athread);
 	if (channel>=0)
-		while (sceAudioSRCChRelease() < 0) sceKernelDelayThread(0);
+		while (sceAudioSRCChRelease() < 0) sceKernelDelayThread(100);
 	
 	duration = frame_timer = 0;	
 	channel = athread = audio_stream = -1;

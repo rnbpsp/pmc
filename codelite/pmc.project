@@ -168,6 +168,7 @@
       <File Name="../src/decoders/sceMp3Aac.c"/>
       <File Name="../src/decoders/sceWma.c"/>
       <File Name="../src/decoders/sceWma.cooleyes.c"/>
+      <File Name="../src/decoders/sceAtrac3p.c"/>
     </VirtualDirectory>
     <VirtualDirectory Name="prof">
       <File Name="../src/prof/prof.c"/>

@@ -30,10 +30,15 @@ public:
 	u16 get_ySize(){ return this->font->texYSize; };
 	u16 get_height(){ return get_ySize()*this->size; };
 	
+	void set_encoding(u32 cp)
+	{
+		intraFontSetEncoding(this->font, cp*0x00010000);
+	}
+	
 	void set_style(float scale, u32 color, u32 shadow, u32 options)
 	{
 		size = scale;
-		intraFontSetStyle(this->font, size, color, shadow, options|INTRAFONT_STRING_UTF8);
+		intraFontSetStyle(this->font, size, color, shadow, options);
 	};
 	
 	float print(const char *txt, float x, float y, float width=0.0f, int len=0)

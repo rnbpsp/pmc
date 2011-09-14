@@ -17,7 +17,7 @@ extern "C"
 
 // number of audio samples per output per channel (17-4111)
 #define PMC_AUDIO_NUM_SAMPLES 4111
-#define PMC_BUFIO_SIZE (1024*1024)
+#define PMC_BUFIO_SIZE (512*1024)
 
 // number of times to retry decoding if decoder returns an error
 #define NUMOF_RETRIES 3
@@ -47,6 +47,7 @@ public:
 	char *filepath, *filename;
 	Pmc_Image *album_art;
 	
+	// TODO: only asf/wma needs special attention
 	// use libavformat to fetch frames
 #define PMC_PARSER_FFMPEG 0
 	// some sce codecs needs sce parser
