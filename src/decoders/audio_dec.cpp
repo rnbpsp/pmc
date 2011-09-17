@@ -72,7 +72,7 @@ AUDIO_DECODERS::open(
 		else return false;
 	}
 	
-	printf("allocating tmp buffer:64\n");
+	// sceAsfParser needs 64byte alignment
 	tmpbuf = (u8*)memalign(64, C_AUDIOBUF_MAX_SIZE);
 	if (tmpbuf) return true;
 	
@@ -86,10 +86,10 @@ void
 AUDIO_DECODERS::close()
 {
 	memset(&custom_tag, 0, 4*256);
+	memset(&custom_info, 0, 4*4);
 	if (audio_dec) audio_dec->close();
 	audio_dec = NULL;
-	free(tmpbuf);
-	tmpbuf = NULL;
+	free(tmpbuf); tmpbuf = NULL;
 	tmpbuf_size = tmpbuf_readpos = 0;
 };
 

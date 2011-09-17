@@ -16,8 +16,11 @@ extern "C"
 #include "decoders/audio_dec.h"
 
 // number of audio samples per output per channel (17-4111)
-#define PMC_AUDIO_NUM_SAMPLES 4111
-#define PMC_BUFIO_SIZE (512*1024)
+#define PMC_AUDIO_NUM_SAMPLES 4096
+
+// ffmpeg's buffed io is kind of unstable
+// after seeking back to zero from eof
+#define PMC_BUFIO_SIZE (1024*1024)
 
 // number of times to retry decoding if decoder returns an error
 #define NUMOF_RETRIES 3
@@ -33,7 +36,7 @@ class PMC_PLAYER
 	AUDIO_DECODERS audio_decoder;
 	
 	int channel, audio_stream;
-	SceUID athread;
+	SceUID athread, vaudio_modid;
 	bool did_seek;
 	
 	int64_t duration; // duration in seconds
@@ -41,7 +44,7 @@ class PMC_PLAYER
 	
 	/*friend*/ bool ffaudio_callback(void *dest, int& written, AVPacket& packet);
 	/*friend*/ bool sceaudio_callback(void *dest, int& written, AVPacket& packet);
-	friend int audio_main(SceSize argc, void* argv);
+	static int audio_main(SceSize argc, void* argv);
 //	friend int show_nowplaying(const char *path, const char *name);
 public:
 	char *filepath, *filename;
@@ -76,6 +79,7 @@ public:
 		channel(-1),
 		audio_stream(-1),
 		athread(-1),
+		vaudio_modid(-1),
 		did_seek(false),
 		duration(0),
 		frame_timer(0),
@@ -113,15 +117,25 @@ public:
 		else mode = (mode & REMOVE_LOOP) | PL_MODE_LOOP_ONE;
 	};
 	
-	// returns time in seconds
-	int get_time()
+	/*
+	int get_channels()
 	{
-		return frame_timer / (codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE));
+		return (codec_ctx?codec_ctx->channels:audio_decoder.get_int(NFF_TAG_CHANNELS));
+	};*/
+	
+	int get_samprate()
+	{
+		return (codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE));
+	};
+	
+	int get_time() // returns time in seconds
+	{
+		return frame_timer / get_samprate();
 	};
 	
 	float get_percentRemaining()
 	{
-    return frame_timer / (float)(duration * (codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE)));
+    return frame_timer / (float)(duration * get_samprate());
 	};
 	float get_percentRemaining(int64_t seconds)
 	{
@@ -130,7 +144,7 @@ public:
 	
 	bool exceed_duration(int64_t seconds){return seconds>duration;};
 	
-	void seek(int64_t seconds);
+	bool seek(int64_t seconds);
 	
 // see decoders/audio_dec.h
 #define TIMER_STRING		6

@@ -14,7 +14,7 @@
 #endif
 
 PSP_MODULE_INFO("PSP Music Center", 0, 0, 1);
-PSP_HEAP_SIZE_KB( -8*1024 );//-16*1024/*-4096*/ );
+PSP_HEAP_SIZE_KB( -(8*1024) );
 PSP_MAIN_THREAD_STACK_SIZE_KB(512); // 256 is default
 
 // keep away from vfpu as much as "possible"
@@ -89,7 +89,7 @@ int main()
 	pspDebugScreenPrintf("Loading font...................");
 
 	init_font();
-	font = new PMC_FONT("flash0:/font/ltn0.pgf", INTRAFONT_CACHE_LARGE|(settings.get_codepage()*0x00010000));
+	font = new PMC_FONT("flash0:/font/ltn0.pgf", INTRAFONT_CACHE_LARGE);
 	font->set_style(0.8f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
 	
 	pspDebugScreenPrintf("done");
@@ -139,13 +139,13 @@ int main()
 	menu_ico[	PLAYLIST	] =	load_tga("res/playlist ico.tga");
 	menu_ico[	SETTINGS	] =	load_tga("res/settings ico.tga");
 	menu_ico[		ABOUT		] =	load_tga("res/about ico.tga");
-	/*
+	
 	pspDebugScreenPrintf("done");
 	wait_vblank();
 	pspDebugScreenSetXY(33,17);
-	pspDebugScreenPrintf("Loading FFMpeg library.........");
+	pspDebugScreenPrintf("Loading hold- module...........");
 	
-  SceUID ff_modid = sceKernelLoadModule("ffmpeg-music.prx", 0,NULL);
+  SceUID ff_modid = sceKernelLoadModule("hold-.prx", 0,NULL);
 	if (ff_modid<0)
 	{
 		pspDebugScreenPrintf("fail");
@@ -166,7 +166,7 @@ int main()
 		int ret;
 		sceKernelStartModule(ff_modid, 0, 0, &ret, NULL);
 	}
-	*/
+	
 	pspDebugScreenPrintf("done");
 	wait_vblank();
 	
@@ -181,7 +181,7 @@ int main()
 	gu_end();
 	gu_sync();
 	
-//err:
+err:
 	settings.cpu = 25;
 	
 	ctrl.wait(CTRL_OK, (const u32*)&(ctrl.pressed.value));
@@ -219,7 +219,6 @@ int main()
 					gu_sync();
 					flip_screen(false);
 					
-					// a lot says this is faster than function pointers
 					switch (cur_ico)
 					{
 						case FILELIST:
@@ -261,21 +260,20 @@ int main()
 	
 	delete icons_img;
 	
-	for(int i=0;i<5;i++)
-		delete menu_ico[i];
+	for(int i=0;i<5;i++) delete menu_ico[i];
 	
 	delete font;
 	
 	term_font();
 	term_gu();
-	/*
+	
 	if (ff_modid>=0)
 	{
 		int ret;
 		sceKernelStopModule(ff_modid, 0, NULL, &ret, NULL);
 		sceKernelUnloadModule(ff_modid);
 	}
-	*/
+	
 #if (_PROFILE)
 	if (!state.exit_viaCallback)
 		gprof_cleanup();

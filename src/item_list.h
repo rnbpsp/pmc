@@ -116,14 +116,11 @@ public:
 	
 	void select_item(unsigned int index, unsigned int& f1rst, unsigned int& sel)
 	{
-		if (index==0 || index>last_selection)
-		{
-			f1rst = sel = 0;
-		}
-		else if (index >= last_first)
+		if (index >= last_first)
 		{
 			f1rst = last_first;
 			sel = index-last_first;
+			sel = pmc_min<unsigned int>(sel, last_selection);
 		}
 		else
 		{
@@ -164,10 +161,7 @@ public:
 					if (i==selected)
 					{
 						font->set_style(scale, sel_color, sel_shad, opts_sel);
-						if (opts_sel&0x00002000)
-							scroll = font->print(item, scroll, ypos, width );
-						else
-							scroll = font->print(item, xCoord, ypos, width );
+						scroll = font->print(item, opts_sel&0x00002000?scroll:xCoord, ypos, width );
 					}
 					else
 					{

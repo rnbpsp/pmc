@@ -1,10 +1,23 @@
 CHANGELOG
-	versions and changes are listed from latest(top) to oldest
+	versions and changes are listed from latest(on top) to oldest
 
 r3
+	(*)use sceIoDevctl to check for ms existence
+			fixes crash when listing drives
+			might not work for the PSPgo
+	(*)added hold- module
+			just a slightly modified version of hold+ that doesn't interfere with the cpu clock
+			makes this app incompatible with hold+
+	(*)added sync instruction after every writeback/invalidate of dcache
+			fixes some missing texts and flickering images
+	(*)mp4 cover art are now displayed, more to come(flac, etc...)
+	(*)update taglib to 1.7(from 1.5)
+	(*)error messages are now suppressed in hold mode, allows continous playback
+	(*)added support for heaphone remote(untested)
+	(*)fixed a bug that causes the cursor to exceed list in file browser
 	(*)metadata is now rendered as UTF8(as it should be)
-	(*)added option to set code page ini settings.ini
-	(*)added atrac3+ decoder in hardware(except from RM files)
+	(*)added option to set code page in settings.ini
+	(*)added atrac3+ decoder in hardware(only RIFF and EA3 headers)
 	(*)hardware decode aac from files with adts header(*.aac only)
 	(*)update to ffmpeg 0.8.3
 	(*)fixed memleak for codecs that doesn't consume all packet.data in one call to decoding function

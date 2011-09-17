@@ -27,7 +27,8 @@ MAIN = \
 
 MUSIC_PLAYER = \
 		src/player.o \
-		src/art/album_art.o
+		src/art/album_art.o \
+		src/scevaudio.o
 #		ffmpeg-prx/ffmpegMusic.o
 
 MUSIC_DECODER = \
@@ -65,8 +66,7 @@ MIPS_OPTIMIZATIONS = \
 		-fsingle-precision-constant
 #		-mfp32 -msingle-float -mhard-float
 
-TAGLIB_DEFINES = -DHAVE_ZLIB=1 -DNDEBUG -DTAGLIB_WITH_ASF -DTAGLIB_WITH_MP4 -DTAGLIB_NO_CONFIG
-# $(TAGLIB_DEFINES) 
+TAGLIB_DEFINES  = -DHAVE_ZLIB=1 -DWITH_ASF -DWITH_MP4 -DTAGLIB_NO_CONFIG
 CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
 				-D_SHOWFPS=$(PMC_SHOWFPS) -D_PROFILE=$(PMC_PROFILE) \
 				$(MIPS_OPTIMIZATIONS) $(TAGLIB_DEFINES)
@@ -77,11 +77,11 @@ LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lavutil -lm \
 #-lminIni -lswscale -lpspvfpu
 #
 
-LIBDIR = ./lib ./taglib ./lib/ffmpeg-$(FFMPEG_PORT)
-INCDIR = ./include ./taglib ./include/ffmpeg-$(FFMPEG_PORT) ./cooleyesBridge \
-			./taglib ./taglib/toolkit ./taglib/ape \
-			./taglib/mpeg ./taglib/mpeg/id3v1 \
-			./taglib/mpeg/id3v2
+LIBDIR = ./lib ./lib/ffmpeg-$(FFMPEG_PORT)
+INCDIR = ./include ./include/taglib-1.7 ./include/ffmpeg-$(FFMPEG_PORT) ./cooleyesBridge
+#			./taglib ./taglib/toolkit ./taglib/ape \
+#			./taglib/mpeg ./taglib/mpeg/id3v1 \
+#			./taglib/mpeg/id3v2
 
 LDFLAGS = -Wl,-allow-multiple-definition
 
@@ -97,6 +97,8 @@ ifeq ($(PMC_PROFILE), 1)
 OBJS += $(PROFILING)
 CFLAGS += -pg
 LIBS += -lpspprof
+else 
+CFLAGS += -fomit-frame-pointer
 endif
 
 else
@@ -123,9 +125,6 @@ include sdk/build.mak
 symfile:
 	prxtool -y $(TARGET).elf > $(TARGET).sym
 
-intrafont:
-	make -C intraFont reinstall
-
 install:
 	cp -f -u ./EBOOT.PBP ./release/EBOOT.PBP
 	cp -f -u ./README ./release/README
@@ -138,6 +137,7 @@ install:
 	cp -f -u "./res/settings ico.tga" "./release/res/settings ico.tga"
 	cp -f -u "./res/splash.tga" "./release/res/splash.tga"
 	cp -f -u ./cooleyesBridge/cooleyesBridge.prx ./release/cooleyesBridge.prx
+	cp -f -u ./hold-.prx ./hold-.prx
 
 help:
 	@echo "symfile:   generate symbols file using prxtool"

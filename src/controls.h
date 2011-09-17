@@ -1,6 +1,9 @@
 #ifndef __PMC_CONTROLLERS_H__
 #define __PMC_CONTROLLERS_H__
 
+#include <pspdisplay.h>
+#include "callbacks.h"
+
 class Pmc_Ctrl {
 	typedef union {
 		struct {
@@ -21,18 +24,37 @@ class Pmc_Ctrl {
 			bool square:1;				// Square
 							// the following can only be read in kernel mode (except hold)
 			bool home:1;					// Home
-			bool hold:1;					// Hold (power switch in the opposite direction)
+			bool hold:1;					// Hold (power switch in the opposite direction and hprm Hold)
 			bool wlan:1;					// WLAN switch
-			bool remote:1;				// Remote hold position
-			bool vol_up:1;				// Volume up
-			bool vol_down:1;			// Volume down
+			bool rm_hold:1;				// Remote hold position
+			bool vol_up:1;				// Volume up (ctrl and hprm)
+			bool vol_down:1;			// Volume down (ctrl and hprm)
 			bool screen:1;				// Screen
 			bool note:1;					// Note
 			bool disc:1;					// UMD disc presence
 			bool ms:1;						// MS presence
+							// hprm remote
+			bool rm_play:1;
+			bool rm_next:1;
+			bool rm_prev:1;
 		};
 		unsigned int value;		// 32-bit value containing all keys
 	} ctrl_bit;
+	
+	typedef union {
+		struct {
+			bool play:1;
+						bool pad1:1;
+			bool next:1;
+			bool prev:1;
+			bool vol_up:1;
+			bool vol_down:1;
+						bool pad2:1;
+			bool hold:1;
+		};
+		unsigned int value;		// 32-bit value containing all keys
+	} hprm_bit;
+	
 	u32 autorepeat_lastHeld;
 	u32 autorepeat_counter;
 	u32 delay_counter;
@@ -47,9 +69,18 @@ public:
 	//u8 x, y; analog axes
 	
 	Pmc_Ctrl();
-	void wait(const u32 button, const u32 *state);
-	void read();
-	void flush(bool vBlank=true);
+	void wait(const u32 button, const u32 *button_state);
+	void read(bool read_remote=false);
+	void flush(bool vBlank=true)
+	{
+		held.value =
+		released.value =
+		pressed.value =
+		autorepeat_lastHeld =
+		autorepeat_counter =
+		delay_counter = 0;
+		if (vBlank) sceDisplayWaitVblankStart();
+	};
 };
 
 extern Pmc_Ctrl ctrl;
@@ -69,7 +100,7 @@ extern u32 CTRL_OK, CTRL_CANCEL;
 #define CTRL_HOME				0x010000
 #define CTRL_HOLD				0x020000
 #define CTRL_WLAN_UP		0x040000
-#define CTRL_REMOTE			0x080000 
+#define CTRL_RM_HOLD		0x080000
 #define CTRL_VOLUP			0x100000
 #define CTRL_VOLDOWN		0x200000
 #define CTRL_SCREEN			0x400000
@@ -77,12 +108,17 @@ extern u32 CTRL_OK, CTRL_CANCEL;
 #define CTRL_DISC				0x1000000
 #define CTRL_MS					0x2000000
 
+#define CTRL_RM_PLAY		(1<<27)
+#define CTRL_RM_NEXT		(1<<28)
+#define CTRL_RM_PREV		(1<<29)
+
+
 #endif
 
 /*
 01				PSP_CTRL_SELECT     = 0x000001,
-02				ok									=	0x000002,
-03				cancel							= 0x000004,
+02					ok								=	0x000002,
+03					cancel						= 0x000004,
 04        PSP_CTRL_START      = 0x000008,
 05        PSP_CTRL_UP         = 0x000010,
 06        PSP_CTRL_RIGHT      = 0x000020,
@@ -106,4 +142,7 @@ extern u32 CTRL_OK, CTRL_CANCEL;
 24        PSP_CTRL_NOTE       = 0x800000,
 25        PSP_CTRL_DISC       = 0x1000000,
 26        PSP_CTRL_MS         = 0x2000000,
+27				CTRL_RM_PLAY
+28				CTRL_RM_NEXT
+29				CTRL_RM_PREV
 */

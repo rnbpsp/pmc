@@ -32,10 +32,7 @@ int ffmpegAdec_decode(s16 *buf, AVPacket *pkt, int size)
 	pkt->size -= len;
 	
 	if (frame_size_ptr<0)
-	{
 		printf("ffmpeg decoder error: 0x%08x, %d\n", frame_size_ptr, frame_size_ptr);
-		return 0;
-	}
 	
 	return frame_size_ptr;
 }
@@ -56,9 +53,6 @@ int ffmpegAdec_open(AVCodecContext *ctx)
 		codec_ = NULL;
 		return 0;
 	}
-	
-	if (ctx->sample_fmt!=SAMPLE_FMT_S16)
-		printf("sample format is not S16.\n");
 	
 	// pspaudiolib only outputs 44100 stereo shorts
 	//if (codec_ctx_->sample_rate!=44100)

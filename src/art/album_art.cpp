@@ -8,7 +8,7 @@ extern "C" {
 #include <jpeglib.h>
 }
 
-#if 0
+#if 1
 #include <fileref.h>
 #include <tag.h>
 #include <tbytevector.h>
@@ -18,6 +18,8 @@ extern "C" {
 #include <id3v2frame.h>
 #include <id3v2header.h>
 #include <attachedpictureframe.h>
+#include <mp4file.h>
+#include <mp4tag.h>
 #else
 #include "fileref.h"
 #include "tag.h"
@@ -30,13 +32,15 @@ extern "C" {
 #endif
 
 static Pmc_Image *load_id3art(const char *file);
+static Pmc_Image *load_mp4art(const char *file);
 
 Pmc_Image *load_albumArt(const char *file)
 {
 	Pmc_Image *img = NULL;
 	
-	// ID3v2(APIC, PIC) frames
-	img = load_id3art(file);
+	/* Some containers supports multiple tag formats */
+						img = load_id3art(file); // ID3v2(APIC, PIC) frames
+	if (!img)	img = load_mp4art(file); // MP4(covr) Cover art
 	if (!img) return NULL;
 	if (!img->isValid())
 	{
@@ -74,7 +78,7 @@ Pmc_Image *load_albumArt(const char *file)
 	return img;
 }
 
-static Pmc_Image *decode_jpgArt(void *data, size_t size)
+static NOINLINE Pmc_Image *decode_jpgArt(void *data, size_t size)
 {
 	int width=0, height=0;
 	struct jpeg_decompress_struct cinfo;
@@ -102,7 +106,7 @@ static Pmc_Image *decode_jpgArt(void *data, size_t size)
 			jpeg_read_scanlines( &cinfo, row_pointer, 1 );
 			u32 *data = (u32*)img->data + (img->bufwidth*cinfo.output_scanline);
 
-			for ( int j=0, i=0; j<cinfo.image_width; ++j, i+=3 )
+			for ( unsigned j=0, i=0; j<cinfo.image_width; ++j, i+=3 )
 				data[j] = RGBA8(row_pointer[0][i], row_pointer[0][i+1], row_pointer[0][i+2]);
 	}
 	jpeg_finish_decompress( &cinfo );
@@ -137,7 +141,7 @@ static Pmc_Image *load_id3art(const char *file)
 				else if (pic->mimeType() == "image/png")
 					printf("album art is png.\n");
 			}
-		}/*
+		}
 		else // check for id3v2.2 frames
 		{
 			ID3v2::FrameList l2 = tagfile.ID3v2Tag()->frameListMap()["PIC"];
@@ -154,8 +158,35 @@ static Pmc_Image *load_id3art(const char *file)
 						printf("album art is png.\n");
 				}
 			}
-		}*/
+		}
 	}
 	
 	return NULL;
 }
+
+// http://stackoverflow.com/questions/6542465/c-taglib-cover-art-from-mpeg-4-files
+static Pmc_Image *load_mp4art(const char *file)
+{
+	MP4::File tagfile(file, false);
+
+	if( tagfile.tag() )
+	{
+		// Get the list of frames for a specific frame type
+		MP4::CoverArtList l = tagfile.tag()->itemListMap()["covr"].toCoverArtList();
+		if( !l.isEmpty() )
+		{
+			MP4::CoverArt pic = l.front();
+			
+			if (pic.data().size() > 0)
+			{
+				if (pic.format() == MP4::CoverArt::JPEG)
+					return decode_jpgArt(pic.data().data(), pic.data().size());
+				else if (pic.format() == MP4::CoverArt::PNG)
+					printf("album art is png.\n");
+			}
+		}
+	}
+	
+	return NULL;
+}
+

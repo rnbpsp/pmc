@@ -5,6 +5,7 @@
 #include "drawing.h"
 #include "controls.h"
 #include "font.h"
+#include "settings.h"
 
 void show_notdone()
 {
@@ -24,8 +25,8 @@ void show_notdone()
 			font->set_style(1.f, COL_WHITE, 0, INTRAFONT_ALIGN_CENTER);
 			font->print("This part is yet to be done.", 240, 136);
 			
-			font->set_style(0.8f, COL_WHITE, 0, INTRAFONT_ALIGN_CENTER);
-			font->print("Press X to return", 240, 270);
+			font->set_style(0.8f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
+			font->printf(475, 267, "Press %c to quit", settings.cancel_char);
 			
 			show_topbar("Not Done Yet");
 			

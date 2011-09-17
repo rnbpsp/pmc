@@ -11,9 +11,3 @@ use fatfs for reading "ms0:" using "msstor:"
 fix seams between 512px boundary on large images
 
 finish settings //ini not reading with minglue-psp.h
-
-show cpu and gpu load
-
-after returning to file browser from now playing, cursor will exceed list
-		// happens only if you get to now playing by pressing select or from main menu
-

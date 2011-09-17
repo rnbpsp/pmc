@@ -1,13 +1,13 @@
 #include "main.h"
 #include "controls.h"
-#include <pspdisplay.h>
 #include <pspctrl.h>
+#include <psphprm.h>
 
 Pmc_Ctrl ctrl;
 u32 CTRL_OK = CTRL_CIRCLE;
 u32 CTRL_CANCEL = CTRL_CROSS;
 
-void Pmc_Ctrl::wait(const u32 button, const u32 *state)
+void Pmc_Ctrl::wait(const u32 button, const u32 *button_state)
 {
 	do
 	{
@@ -15,7 +15,7 @@ void Pmc_Ctrl::wait(const u32 button, const u32 *state)
 		//sceKernelDelayThread(MSEC(100));
 		this->read();
 	}
-	while ( !( *state & button ) );
+	while ( !( *button_state & button ) );
 }
 
 //#include "settings.h"
@@ -38,21 +38,36 @@ Pmc_Ctrl::Pmc_Ctrl()
 	sceCtrlSetSamplingMode(PSP_CTRL_MODE_DIGITAL);
 };
 
-void Pmc_Ctrl::read() {
+void Pmc_Ctrl::read(bool read_remote) {
 	SceCtrlData pad;
+	
+	if (state.hold_mode) return flush(false);
+	
 	sceCtrlReadBufferPositive(&pad, 1);
 	
 	unsigned int keys = pad.Buttons;
 	
-	if (keys & CTRL_HOLD) return flush(false);
+	if (keys & (CTRL_HOLD|CTRL_RM_HOLD)) return flush(false);
 	
 	register unsigned int lastHeld = held.value;
 
-	ctrl_bit *button;
-	button = (ctrl_bit*)&keys;
+	ctrl_bit *button = (ctrl_bit*)&keys;
 
 	button->ok = button->value & CTRL_OK;
 	button->cancel = button->value & CTRL_CANCEL;
+	
+	if (read_remote && sceHprmIsRemoteExist())
+	{
+		hprm_bit hprm_keys;
+		sceHprmPeekCurrentKey(&(hprm_keys.value));
+		
+		button->rm_play = hprm_keys.play;
+		button->rm_next = hprm_keys.next;
+		button->rm_prev = hprm_keys.prev;
+		button->vol_up = hprm_keys.vol_up;
+		button->vol_down = hprm_keys.vol_down;
+	//	button->rm_hold = hprm_keys.hold;
+	}
 	
 	if (autorepeat)
 	{
@@ -83,13 +98,3 @@ void Pmc_Ctrl::read() {
 	autorepeat_lastHeld = keys & autorepeat_mask;
 }
 
-void Pmc_Ctrl::flush(bool vBlank) {
-//	x = y =
-	held.value =
-	released.value =
-	pressed.value =
-	autorepeat_lastHeld =
-	autorepeat_counter =
-	delay_counter = 0;
-	if (vBlank) sceDisplayWaitVblank();
-}

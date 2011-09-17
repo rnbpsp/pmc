@@ -16,14 +16,13 @@
 
 //Pmc_Image *topbar_img = NULL;
 Pmc_ImageTile topbar_tile[8];
-static pspTime time;
 
 // never call this without printing the time
-static	inline
-void print_date(float x, float y, float size, u32 txt_color, u32 shad_color, unsigned int pos)
+static	FORCE_INLINE
+void print_date(pspTime& cur_time, float x, float y, float size, u32 txt_color, u32 shad_color, unsigned int pos)
 {
-	int day = sceRtcGetDayOfWeek(time.year, time.month, time.day);
-	int month = time.month-1;
+	int day = sceRtcGetDayOfWeek(cur_time.year, cur_time.month, cur_time.day);
+	int month = cur_time.month-1;
 	
 	const char *days[] =
 	{
@@ -46,26 +45,26 @@ void print_date(float x, float y, float size, u32 txt_color, u32 shad_color, uns
 //	sprintf(date_string, "%s, %s %d", days[day], months[month], time.day);
 
 	font->set_style(size, txt_color, shad_color, pos);
-	font->printf(x, y, "%s, %s %d", days[day], months[month], time.day);
+	font->printf(x, y, "%s, %s %d", days[day], months[month], cur_time.day);
 }
 
-static inline
-void print_time(float x, float y, float size, u32 txt_color, u32 shad_color, unsigned int pos)
+static FORCE_INLINE
+void print_time(pspTime& cur_time, float x, float y, float size, u32 txt_color, u32 shad_color, unsigned int pos)
 {
-	sceRtcGetCurrentClockLocalTime(&time);
+	sceRtcGetCurrentClockLocalTime(&cur_time);
 	
-	char seconds = time.seconds & 1 ? ':' : ' ';
+	char seconds = cur_time.seconds & 1 ? ':' : ' ';
 	
 	int hour;
 	char am_pm;
-	if ( time.hour > 12 )
+	if ( cur_time.hour > 12 )
 	{
-		hour = time.hour-12;
+		hour = cur_time.hour-12;
 		am_pm = 'P';
 	}
 	else
 	{
-		hour = time.hour;
+		hour = cur_time.hour;
 		am_pm = 'A';
 		if (hour==0) hour = 12;
 	}
@@ -77,7 +76,7 @@ void print_time(float x, float y, float size, u32 txt_color, u32 shad_color, uns
 //				);
 	font->set_style(size, txt_color, shad_color, pos|INTRAFONT_WIDTH_FIX|15);
 	font->printf(x, y, "%d"	"%c"	"%02d"	" %cM",
-					hour, seconds, time.minutes, am_pm );
+					hour, seconds, cur_time.minutes, am_pm );
 }
 
 // 506*68 topbar space
@@ -91,7 +90,7 @@ void show_topbar(const char *menu_name)
 		topbar_tile[BAT_BASE].draw(0,0);
 		topbar_tile[BAT_TAIL].draw(0,0);
 		
-		battery = topbar_tile[BAT_BODY].width*(battery*(1.f/100.f));///100.f);
+		battery = topbar_tile[BAT_BODY].width*(battery*(1.f/100.f));
 		topbar_tile[BAT_BODY].scaleX = battery;
 		topbar_tile[BAT_BODY].draw(topbar_tile[BAT_TAIL].width, 0);
 		
@@ -104,14 +103,15 @@ void show_topbar(const char *menu_name)
 	if (sceHprmIsHeadphoneExist())
 		topbar_tile[EAR_PLUG].draw(topbar_tile[BAT_CAN].width+2, 0);
 	
-	if (battery = battery_percent(true))
+	if ((battery = battery_percent(true)))
 	{
 		font->set_style(0.7f, COL_WHITE, 0, INTRAFONT_ALIGN_CENTER);
 		font->printf(28, 21, "%d%%", battery);
 	}
 	
-	print_time(248.f, 30.f, 0.8f, COL_WHITE, 0, INTRAFONT_ALIGN_RIGHT);
-	print_date(248.f, 14.5f, 0.6f, COL_WHITE, 0, INTRAFONT_ALIGN_RIGHT);
+	pspTime cur_time;
+	print_time(cur_time, 248.f, 30.f, 0.8f, COL_WHITE, 0, INTRAFONT_ALIGN_RIGHT);
+	print_date(cur_time, 248.f, 14.5f, 0.6f, COL_WHITE, 0, INTRAFONT_ALIGN_RIGHT);
 	
 	font->set_style(1.f, RGB(50,128,192), 0, INTRAFONT_ALIGN_CENTER);
 	font->print(menu_name, 366.5f, 25.5f);

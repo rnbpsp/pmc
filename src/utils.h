@@ -1,8 +1,10 @@
 #ifndef __PMC_UTILS_H__
 #define __PMC_UTILS_H__
 
-#define UNCACHED_ADDRESS_SPACE 0x40000000
 #define FORCE_INLINE inline __attribute__((always_inline))
+#define NOINLINE __attribute__((noinline))
+
+#define UNCACHED_ADDRESS_SPACE 0x40000000
 #define ALIGN_DECL(align) __attribute__((aligned(align)))
 #define ALIGN_ADDR(s, align) (( (u32)(s) ) & ~(align-1))
 #define ALIGN_SIZE(s, align) (( ((u32)(s)) + align-1) & ~(align-1))
@@ -13,19 +15,22 @@
 FORCE_INLINE
 void pmc_invalidate(void *ptr, size_t size)
 {
-	sceKernelDcacheInvalidateRange((void*)ALIGN_ADDR(ptr, 64), ALIGN_SIZE(size, 64)+64);
+	sceKernelDcacheInvalidateRange(ptr, size);
+	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 }
 
 FORCE_INLINE
 void pmc_wbinvalidate(void *ptr, size_t size)
 {
-	sceKernelDcacheWritebackInvalidateRange((void*)ALIGN_ADDR(ptr, 64), ALIGN_SIZE(size, 64)+64);
+	sceKernelDcacheWritebackInvalidateRange(ptr, size);
+	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 }
 
 FORCE_INLINE
 void pmc_wb(void *ptr, size_t size)
 {
-	sceKernelDcacheWritebackRange((void*)ALIGN_ADDR(ptr, 64), ALIGN_SIZE(size, 64)+64);
+	sceKernelDcacheWritebackRange(ptr, size);
+	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 }
 
 TEMPLATE
@@ -53,9 +58,9 @@ int battery_percent(int text);
 void show_fps();
 char* pmc_itoa(int value, char* result, int base);
 
-// microseconds to miliseconds
+// miliseconds to microseconds
 #define MSEC(usec) (usec*1000)
-#define SECONDS(usec) MSEC(usec)*100
+#define SECONDS(usec) MSEC(usec)*1000
 
 #ifdef __cplusplus
 }
@@ -99,6 +104,7 @@ inline void check_error(bool test, const char msg[], bool fatal=false)
 	{ \
 		char __err_str[1024]; \
 		snprintf(__err_str, 1024, x, __VA_ARGS__); \
+		__err_str[1023] = 0; \
 		show_error(__err_str); \
 	}
 
