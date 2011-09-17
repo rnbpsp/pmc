@@ -16,6 +16,7 @@ PSP_FW_VERSION = 500
 
 #LIBDIR = ../lib
 LIBS = -lpsppower_driver -lpspsystemctrl_kernel
+LIBDIR = .
 LDFLAGS = -nostdlib -nodefaultlibs
 
 #EXTRA_TARGETS = EBOOT.PBP

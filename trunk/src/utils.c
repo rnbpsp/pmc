@@ -137,6 +137,7 @@ void show_fps()
 #endif
 ////////////////////////////////////////////////////////
 
+/* just checked and unaligned data works works
 #include <malloc.h>
 // TODO: Only AVPacket.data is needed to be aligned
 // force ffmpeg to 64byte align everything
@@ -145,6 +146,8 @@ void *av_malloc(size_t size)
 {
 	return memalign(64, size);
 }
+*/
+
 // the ff. functions are for ffmpeg 0.6 and up
 // won't compile w/o these (will get undefined references)
 

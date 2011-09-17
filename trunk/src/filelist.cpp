@@ -37,10 +37,10 @@ void dir_slash (char *dir)
 }
 
 #define sort_list() if (settings.fileSort_mode!=0) std::sort(files.begin(), files.end())
-static
+static NOINLINE
 bool push_folder(std::vector<DIR_ENTRY> &files, char *dirpath)
 {
-		const bool isUmd = strncasecmp(dirpath, "disc0:", 6)==0;
+		const bool isUmd = strncasecmp(dirpath, "disc0:/", 6)==0;
 		/*
 		if (isUmd && !umd_open)
 		{
@@ -165,7 +165,7 @@ void select_item(std::vector<DIR_ENTRY> &files,
 }
 
 #define push_folder(x) push_folder(files, (x))
-static inline
+static NOINLINE
 bool check_drive(const char *drive)
 {
 	SceUID fd = sceIoDopen(drive);
@@ -179,19 +179,19 @@ bool check_drive(const char *drive)
 	return false;
 }
 
-// NOTE: crashing when app is compiled without optimizations
-static //inline
+#include "pspmscm.h"
+static NOINLINE
 void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 {
 	files.clear();
-	DIR_ENTRY tmp;
+	//DIR_ENTRY tmp;
 	if ( check_drive("ef0:/") )
 	{
 		DIR_ENTRY tmp("ef0:/");
 		files.push_back(tmp);
 	}
 	
-	if ( check_drive("ms0:/") /* crash here */ )
+	if (MScmIsMediumInserted())
 	{
 		DIR_ENTRY tmp("ms0:/");
 		files.push_back(tmp);
@@ -215,7 +215,7 @@ void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 			files.push_back(tmp);
 		}
 	}
-*/
+	*/
 	drives_shown = true;
 }
 
@@ -233,7 +233,7 @@ void up_oneDir(char *out)
 	*tmp = '\0';
 }
 
-static
+static inline
 bool go_UpOneDir(std::vector<DIR_ENTRY> &files, \
 			PMC_LIST &file_list, unsigned int &top, unsigned int &sel)
 {
@@ -409,7 +409,6 @@ void show_filelist(bool show_playing)
 	int cursor_bar = (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*sel_item);
 	while(state.running)
 	{
-			ctrl.read();
 		if (player_ret==0)
 		{
 			if ( gu_start() )
@@ -436,7 +435,7 @@ void show_filelist(bool show_playing)
 					player_icons[PL_ICON_BAR].scaleX = 414;
 					player_icons[PL_ICON_BAR].draw(44, cursor_bar);
 
-					for(int i=0; i<NUMOF_ITEMS && (i+top_item)<files.size(); ++i)
+					for(unsigned i=0; i<NUMOF_ITEMS && (i+top_item)<files.size(); ++i)
 						if (files[top_item+i].isDir())
 							file_ico[0].draw(28, (LIST_YPOS-(font->get_ySize()*0.6f))+((font->get_ySize()*0.6f + 2.f)*i) );
 				}
@@ -448,7 +447,10 @@ void show_filelist(bool show_playing)
 				font->set_style(0.9f, COL_WHITE, 0, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_LEFT);
 				dirX = font->print(cur_dir, dirX, 76, 430);
 				
+				font->set_encoding(settings.get_codepage());
 				file_list.print<DIR_ENTRY>(top_item, sel_item, files);
+				font->set_encoding(0);
+
 				
 				if (!files.empty() && file_list.show_scroll())
 				{
@@ -466,8 +468,9 @@ void show_filelist(bool show_playing)
 				gu_sync();
 				
 				flip_screen();
+				ctrl.read();
 			}
-			else wait_vblank();
+			else ctrl.flush(true);
 			
 			if (ctrl.released.cancel) break;
 			else if (ctrl.pressed.triangle)
@@ -494,15 +497,20 @@ void show_filelist(bool show_playing)
 			else if (ctrl.pressed.down)	file_list.down(top_item, sel_item);
 			else if (ctrl.pressed.left)	file_list.page_up(top_item, sel_item);
 			else if (ctrl.pressed.right)	file_list.page_down(top_item, sel_item);
+			else if (ctrl.pressed.value&(CTRL_OK|CTRL_SQUARE)) goto open_item;
 		}
-		if (ctrl.pressed.value&(CTRL_OK|CTRL_SQUARE) || player_ret)
+		else //ctrl.flush(true);
+		
+		//if ( || player_ret)
 		{
+open_item:
 				if (files.empty()) continue;
 				
-				int cur_item = top_item+sel_item;
+				unsigned int cur_item = top_item+sel_item;
 				
-				// temp workaround for some bug, see TODO
-				if (cur_item>=(int)files.size())
+				// temp workaround for some bug, see TODO (fixed)
+				// but let's keep this just to be sure
+				if (cur_item>=files.size())
 					cur_item = files.empty() ? 0 : files.size()-1;
 				
 				if (ctrl.pressed.square)
@@ -564,7 +572,7 @@ void show_filelist(bool show_playing)
 				
 				if ( files[cur_item].isDir() )
 				{
-					// temporary
+					// TODO: temporary
 					if (player_ret!=0) continue;
 					
 					char tmp_dir[1024];

@@ -5,12 +5,14 @@
 #include <cstring>
 #include <pspthreadman.h>
 #include <pspdisplay.h>
+#include <psputility.h>
+#include <pspvaudio.h>
 
 PMC_PLAYER player;
 
 #define output_silence(buf, num) \
-	for(int z=0; z<num; ++z) ((int*)buf)[z] = 0
-//	memset((void*)buf, 0, num*4)
+	memset((void*)buf, 0, num*4)
+//	for(int z=0; z<num; ++z) ((int*)buf)[z] = 0
 
 bool
 PMC_PLAYER::sceaudio_callback(void *dest, int& written, AVPacket& packet)
@@ -48,12 +50,6 @@ retry_success:
 	return false;
 }
 
-// save packet data for cleaning up
-static struct
-{
-	u8 *data;
-	int size;
-}packet_temp;
 bool
 PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
 {
@@ -74,18 +70,10 @@ PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
 			
 			if (packet.size<=0)
 			{
-					packet.data = packet_temp.data;
-					packet.size = packet_temp.size;
-//					if (audio_decoder.isSceCodec() && codec_ctx->codec_id==CODEC_ID_AAC)
-//						stream_ptr->need_parsing = AV_PARSE_HEADERS;
 					while( av_read_frame(format_ctx, &packet) >= 0 )
 					{
 						if( packet.stream_index == audio_stream )
-						{
-							packet_temp.data = packet.data;
-							packet_temp.size = packet.size;
 							goto dec;
-						}
 						
 						else av_free_packet(&packet);
 						
@@ -110,7 +98,7 @@ dec:
 					output_silence(dest0, remaining);
 					return true;
 				}
-				else retries -= 1; // try two more times
+				else retries -= 1; // try _NUMOF_RETRIES_ more times
 			}
 			else
 			{
@@ -122,8 +110,8 @@ dec:
 	return false;
 }
 
-//static
-int audio_main(SceSize argc, void* argv)
+
+int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 {
 	// i think double buffering is still necessary
 	// sceAudioSrc only supports stereo?
@@ -132,8 +120,8 @@ int audio_main(SceSize argc, void* argv)
 	// put this here so it'll exist until this thread is done
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	packet_temp.data = NULL;;
-	packet_temp.size = 0;
+	pkt.data = NULL;
+	pkt.size = 0;
 
 	int curbuf = 0;
 	while(player.playing != PLAYER_STOPPED)
@@ -143,7 +131,11 @@ int audio_main(SceSize argc, void* argv)
 		
 		if (player.did_seek)
     {
-      pkt.size = 0;
+			if (player.parser==PMC_PARSER_FFMPEG)
+			{
+				pkt.data = NULL;
+				pkt.size = 0;
+			}
       player.did_seek = false;
     }
 		
@@ -161,30 +153,31 @@ int audio_main(SceSize argc, void* argv)
 				end = player.sceaudio_callback(buf[curbuf], written, pkt);
 		}
 		player.frame_timer += written;
-		sceAudioSRCOutputBlocking(player.volume, buf[curbuf]);
-		if (end)
-		{
-			if (player.mode&PL_MODE_LOOP_ONE)
-				player.seek(0);
-			else player.playing = PLAYER_STOPPED;
-		}
+		/*sceVaudioOutputBlocking*/sceAudioSRCOutputBlocking(player.volume, buf[curbuf]);
 		curbuf ^= 1;
+		if (end)
+	//	{
+/*			if ((player.mode&PL_MODE_LOOP_ONE) && player.seek(0))
+				continue;*/
+			player.playing = PLAYER_STOPPED;
+	//	}
 	}
-	
-	pkt.data = packet_temp.data;
-	pkt.size = packet_temp.size;
-	av_free_packet(&pkt);
 	
 	sceKernelExitThread(0);
 	return 0;
 }
 
-// AVIOContext functions
 /*
+// AVIOContext functions
 static
 int pmc_avio_read(void *opaque, uint8_t *buf, int buf_size)
 {
-	return sceIoRead(reinterpret_cast<SceUID>(opaque), buf, buf_size);
+	SceUID fd = reinterpret_cast<SceUID>(opaque);
+	if (sceIoReadAsync(fd, buf, buf_size)<0) return -1;
+	
+	int64_t asyncres;
+	if (sceIoWaitAsync(fd, &asyncres)<0) return -1;
+	return (int)asyncres;
 }
 
 static
@@ -234,8 +227,10 @@ PMC_PLAYER::open(const char *path, const char *name)
 	
 	fd = sceIoOpen(full_path, PSP_O_RDONLY, 0);
 	if (fd<0) error_openfile();
+	if (sceIoChangeAsyncPriority(fd, 0x11) < 0)
+		error_openfile();
 	
-	io_mem = (u8*)av_malloc(PMC_BUFIO_SIZE);
+	io_mem = (u8*)av_malloc(PMC_BUFIO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
 	if (!io_mem)
 	{
 		printf("Not enough memory to alloc buffed io mem. size = " AV_STRINGIFY(PMC_BUFIO_SIZE) "\n");
@@ -245,7 +240,7 @@ PMC_PLAYER::open(const char *path, const char *name)
 	
 	io_ctx = avio_alloc_context(io_mem, PMC_BUFIO_SIZE, 0, \
 												reinterpret_cast<void*>(fd), \
-		reinterpret_cast<int (*)(void*, uint8_t*, int)>(&sceIoRead), \
+		reinterpret_cast<int (*)(void*, uint8_t*, int)>(&sceIoRead/*pmc_avio_read*/), \
 												NULL,
 		reinterpret_cast<int64_t (*)(void*, int64_t,int)>(&sceIoLseek));
 	if (!io_ctx)
@@ -254,7 +249,20 @@ PMC_PLAYER::open(const char *path, const char *name)
 		sceIoClose(fd);
 		error_openfile();
 	}
-	
+	/*
+	vaudio_modid = sceKernelLoadModule("flash0:/kd/vaudio.prx", 0, NULL);
+	if (vaudio_modid < 0)
+	{
+		printf("Cannot load vaudio.prx. 0x%08x\n", vaudio_modid);
+		show_errorEx("Error: Cannot load vaudio.prx = 0x%08x", vaudio_modid);
+		error_openfile();
+	}
+	else
+	{
+		int v_ret;
+		sceKernelStartModule(vaudio_modid, 0, 0, &v_ret, NULL);
+	}
+	*/
 	printf("opening file\n");
 	if (/*strcasecmp(get_ext(name), "wma")==0 &&*/ check_ifwma(io_ctx))
 		parser = PMC_PARSER_SCEWMA;
@@ -309,6 +317,9 @@ ffmpeg_fallback:
 		
 		stream_ptr = format_ctx->streams[audio_stream];
 		codec_ctx = stream_ptr->codec;
+		
+		if (codec_ctx->sample_fmt!=SAMPLE_FMT_S16)
+			printf("sample format is not S16.\n");
 	}
 	
 	if (!audio_decoder.open(codec_ctx, full_path, io_ctx, parser))
@@ -324,18 +335,18 @@ ffmpeg_fallback:
 	}
 	
 	{
-	const int samprate = codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE);
-	channel = sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, samprate, 2);
+	channel = /*sceVaudioChReserve*/sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, get_samprate(), 2);
 	if (channel<0)
 	{
 		printf("Cannot reserve audio channel: 0x%08x\n", channel);
-		show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, samprate);
+		show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, get_samprate());
 		error_openfile();
 	}
 	}
 	
 	athread = sceKernelCreateThread("Audio Player Thread", \
-										&audio_main, /*50*/0x12, 1024*1024, 0, NULL);
+		reinterpret_cast<int (*)(SceSize, void*)>(&PMC_PLAYER::audio_main),
+																0x12, 1024*1024, 0, NULL);
 	if (athread<0)
 	{
 		printf("Error: cannot create audio decoder thread.\n");
@@ -343,11 +354,7 @@ ffmpeg_fallback:
 	}
 	
 	if (stream_ptr!=NULL)
-	{
 		duration = av_rescale(stream_ptr->duration, stream_ptr->time_base.num, stream_ptr->time_base.den); //stream_ptr->duration * av_q2d(stream_ptr->time_base);
-//		if (audio_decoder.isSceCodec() && codec_ctx->codec_id==CODEC_ID_AAC && codec_ctx->codec_tag!=0)
-//			stream_ptr->need_parsing = AVSTREAM_PARSE_HEADERS;
-	}
 	else
 		duration = audio_decoder.get_int(NFF_TAG_DURATION);
 	
@@ -369,9 +376,9 @@ PMC_PLAYER::close()
 	
 	if (athread>=0) sceKernelTerminateDeleteThread(athread);
 	if (channel>=0)
-		while (sceAudioSRCChRelease() < 0) sceKernelDelayThread(100);
+		while (/*sceVaudioChRelease*/sceAudioSRCChRelease() < 0) sceKernelDelayThread(100);
 	
-	duration = frame_timer = 0;	
+	duration = frame_timer = 0;
 	channel = athread = audio_stream = -1;
 	
 	audio_decoder.close();
@@ -383,7 +390,14 @@ PMC_PLAYER::close()
 		format_ctx = NULL;
 		stream_ptr = NULL;
 	}
-	
+	/*
+	if (vaudio_modid>=0)
+	{
+		int ret;
+		sceKernelStopModule(vaudio_modid, 0, NULL, &ret, NULL);
+		sceKernelUnloadModule(vaudio_modid);
+	}
+	*/
 	if (io_ctx!=NULL)
 	{
 		const SceUID fd = reinterpret_cast<SceUID>(io_ctx->opaque);
@@ -493,7 +507,7 @@ PMC_PLAYER::get_str(int tag)
 			}
 			case DURATION_STRING:
 			{
-				int64_t cur_sec =  duration;
+				int64_t cur_sec = duration;
 				const int seconds = cur_sec % 60;
 				cur_sec /= 60;
 				const int minutes = cur_sec % 60;
@@ -514,7 +528,7 @@ PMC_PLAYER::get_str(int tag)
 				const int minutes = time_sec % 60;
 				time_sec /= 60;
 				
-				int64_t dur_sec =  duration;
+				int64_t dur_sec = duration;
 				const int dur_seconds = dur_sec % 60;
 				dur_sec /= 60;
 				const int dur_minutes = dur_sec % 60;
@@ -536,7 +550,7 @@ PMC_PLAYER::get_str(int tag)
 				return temp_str;
 			
 			case TAG_SAMPRATE:
-				pmc_itoa((codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE)), temp_str, 10);
+				pmc_itoa(get_samprate(), temp_str, 10);
 				strcat(temp_str, " Hz");
 				return temp_str;
 			default:
@@ -547,7 +561,7 @@ PMC_PLAYER::get_str(int tag)
 	return "";
 }
 
-void
+bool
 PMC_PLAYER::seek(int64_t seconds)
 {
 	playing |= PLAYER_PAUSED; // pause decoder thread
@@ -559,7 +573,7 @@ PMC_PLAYER::seek(int64_t seconds)
 		if (avformat_seek_file(format_ctx, audio_stream, 0, target, target, AVSEEK_FLAG_FRAME) <0 )
 		{
 			playing ^= PLAYER_PAUSED;
-			return;
+			return false;
 		}
 		seconds = av_rescale(target, stream_ptr->time_base.num, stream_ptr->time_base.den);
 	}
@@ -569,7 +583,7 @@ PMC_PLAYER::seek(int64_t seconds)
 		if ( ret < 0 )
 		{
 			playing ^= PLAYER_PAUSED;
-			return;
+			return false;
 		}
 		seconds = ret;
 	}
@@ -578,4 +592,5 @@ PMC_PLAYER::seek(int64_t seconds)
 	frame_timer =  seconds*( codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE) );
 	did_seek = true;
 	playing ^= PLAYER_PAUSED;
+	return true;
 }

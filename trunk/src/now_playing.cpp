@@ -11,31 +11,41 @@
 Pmc_ImageTile player_icons[8];
 extern Pmc_ImageTile list_bkg;
 
-// TODO
 #define return(x) \
   do { \
-		player_icons[PL_ICON_BAR].offX1 = \
-			player_icons[PL_ICON_BAR].scaleX = \
-				player_icons[PL_ICON_BAR].width; \
-		if (player.playing==PLAYER_STOPPED) \
-			settings.cpu = settings.clocks[FBROWSER_CLOCK]; \
-		else settings.cpu = settings.clocks[FBROWSER_CLOCK] + settings.cpu(player.filename); \
-    ctrl.autorepeat = true; \
-    return (x); \
+		retval = x; \
+		goto ret; \
   }while(0)
 
 int show_nowplaying(const char *path, const char *name)
 {
+	float titleX = 25.f;
+	float bar_len = 0.f;
+	bool seeking = false;
+	int seek_speed = 1;
+	int seek_totime = 0;
+	int retval = 0;
+	
 	if (player.playing==PLAYER_STOPPED)
 	{
 		if (path==NULL || name==NULL)
 			return 0;
 		
 openit:
+		path = strdup(path); // for reopening if seeking to 0 failed
+		name = strdup(name);
 		if ( !player.open(path, name) )
 		{
+			free((void*)path);
+			free((void*)name);
+			if (state.hold_mode) return(1);
 			show_errorEx("Cannot open %s file: %s", get_ext(name), name);
-			return 1;
+			return(0);
+		}
+		else
+		{
+			free((void*)path);
+			free((void*)name);
 		}
 	}
 	else
@@ -53,13 +63,9 @@ openit:
 
 	font->set_style(0.9f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_LEFT);
 	
-	float titleX = 25.f;
-	float bar_len = player.get_percentRemaining();
-	bool seeking = false;
-	int seek_speed = 1;
-	int seek_totime = 0;
-	
+	bar_len = player.get_percentRemaining();
 	settings.cpu = player.filename;
+	
 	while(state.running && player.playing & PLAYER_PLAYING)
 	{
 		if ( gu_start() )
@@ -73,7 +79,6 @@ openit:
 			{
 				sceGuTexFilter(GU_LINEAR,GU_LINEAR);
 				sceGuTexWrap(GU_REPEAT, GU_REPEAT);
-		//		player.album_art->draw_stripScl(325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
 				drawImgStrip_large(player.album_art, 325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
 				sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			}
@@ -111,7 +116,7 @@ openit:
 			for (int i=1; i<6; ++i)
 				font->print(player.get_str(i), 30.f, 90+((font->get_height()+3.25f)*i));
 			sceGuScissor(0, 0, 480, 272);
-			font->set_encoding(settings.get_codepage());
+			font->set_encoding(0);
 			}
 			
 			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
@@ -132,11 +137,20 @@ openit:
 		}
 		else wait_vblank();
 		
-		if (player.playing==PLAYER_STOPPED) return(1);
+		if (player.playing==PLAYER_STOPPED)
+		{
+			if (player.mode&PL_MODE_LOOP_ONE)
+			{
+				path = player.filepath;
+				name = player.filename;
+				goto openit;
+			}
+			else return(1);
+		}
 		
-		ctrl.read();
 		if (seeking)
 		{
+			ctrl.read(false);
 			seek_totime += seek_speed;
 			if (player.exceed_duration(seek_totime/4)) return(1);
 			if (seek_totime<0) return(-1);
@@ -168,11 +182,13 @@ openit:
 		}
 		else
 		{
+			ctrl.read(true);
 						if (ctrl.released.cancel)	return(0);
 			else	if (ctrl.released.square)	break;
-			else	if (ctrl.pressed.ok)			player.pause();
 			else	if (ctrl.pressed.triangle)player.loop();
 			else	if (ctrl.pressed.R)				return(1);
+			else	if (ctrl.pressed.value & (CTRL_OK|CTRL_RM_PLAY))
+									player.pause();
 			else	if (ctrl.pressed.L)
 			{
 				if (bar_len > .02f)
@@ -191,11 +207,28 @@ openit:
 				seek_speed = 1;
 			}
 			
-			bar_len = player.get_percentRemaining();
-			if (seeking) seek_totime = player.get_time()*4;
+			if (seeking)
+			{
+				seek_totime = player.get_time();
+				bar_len = player.get_percentRemaining(seek_totime);
+				seek_totime *= 4;
+			}
+			else bar_len = player.get_percentRemaining();
 		}
 	}
 	
 	player.close();
-	return(0);
+	retval = 0;
+	
+ret:
+	player_icons[PL_ICON_BAR].offX1 =
+		player_icons[PL_ICON_BAR].scaleX =
+			player_icons[PL_ICON_BAR].width;
+	
+	if (player.playing==PLAYER_STOPPED)
+		settings.cpu = settings.clocks[FBROWSER_CLOCK];
+	else
+		settings.cpu = settings.clocks[FBROWSER_CLOCK] + settings.cpu(player.filename);
+	ctrl.autorepeat = true;
+	return retval;
 }

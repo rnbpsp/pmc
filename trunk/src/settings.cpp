@@ -22,7 +22,7 @@ extern void show_notdone();
 
 static const struct {
 	const char *name;
-	int cp;
+	u32 cp;
 }cp_struct[] = {
 	{"ASCII",			CCC_CP000},
 	{"US",				CCC_CP437},
@@ -37,10 +37,10 @@ static const struct {
 	{"UTF-8",			CCC_CPUTF8}
 };
 
-u32
-PMC_SETTINGS::get_codepage()
+const u32
+PMC_SETTINGS::get_codepage() const
 {
-	cp_struct[code_page].cp;
+	return cp_struct[code_page].cp;
 }
 
 /*
@@ -333,7 +333,7 @@ PMC_SETTINGS::isNeeded(const char *file, bool list)
 	if (!ext) return false;
 	ext += 1;
 	
-	for(int i=0; i<exts.size(); ++i)
+	for(unsigned i=0; i<exts.size(); ++i)
 		if (strcasecmp(ext, exts[i].ext)==0)
 			return true;
 	

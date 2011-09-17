@@ -81,7 +81,6 @@ int sceMp3Aac_decode(s16 *buf, AVPacket *pkt, int size)
 		data = (unsigned long)pkt->data;
 		data_size = (unsigned long)pkt->size;
 	}
-	
 	sceMp3Aac_buf[6] = data;
 	sceMp3Aac_buf[7] = data_size;
 	sceMp3Aac_buf[8] = (unsigned long)buf;

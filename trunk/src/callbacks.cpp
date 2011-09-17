@@ -47,12 +47,12 @@ int power_callback(int unknown, int pwrflags, void *common)
 		{
 			printf("hold switch held.\n");
 			state.hold_mode = true;
-			sceGuDisplay(0);
+	//		sceGuDisplay(0);
 		}
 		else //if(state.hold_mode)
 		{
 			state.hold_mode = false;
-			sceGuDisplay(1);
+	//		sceGuDisplay(1);
 		}
 		/*
 		if (pwrflags & PSP_POWER_CB_RESUMING)
@@ -60,6 +60,7 @@ int power_callback(int unknown, int pwrflags, void *common)
 		if (pwrflags & PSP_POWER_CB_STANDBY)
 		*/
 		sceDisplayWaitVblank();
+		printf("power callback called\n");
 
 	return 0;
 }

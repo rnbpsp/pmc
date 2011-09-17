@@ -291,7 +291,8 @@ static int intraFontSwizzle(intraFont *font) {
 	font->texture = tData;
 	font->options |= INTRAFONT_CACHE_ASCII;
 
-	sceKernelDcacheWritebackInvalidateRange((void*)ALIGN_ADDR(tData), ALIGN_SIZE(textureSize)+64);
+	sceKernelDcacheWritebackInvalidateRange((void*)/*ALIGN_ADDR*/(tData), /*ALIGN_SIZE(*/textureSize/*)+64*/);
+	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 	return 1;
 }
 
@@ -681,7 +682,8 @@ intraFont* intraFontLoad(const char *filename, unsigned int options) {
 	}
 
 	//sceKernelDcacheWritebackAll();
-	sceKernelDcacheWritebackRange((void*)ALIGN_ADDR(font->fontdata), ALIGN_SIZE(sizeof(font->fontdata))+64);
+	sceKernelDcacheWritebackRange((void*)/*ALIGN_ADDR*/(font->fontdata), /*ALIGN_SIZE(*/sizeof(font->fontdata)/*)+64*/);
+	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 
 
 	return font;
@@ -1155,7 +1157,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 	//finalize and activate texture (if not already active or has been changed)
 //	sceKernelDcacheWritebackAll();
 
-	sceKernelDcacheWritebackRange((void*)ALIGN_ADDR(v), ALIGN_SIZE(guget_memsize)+64);
+	sceKernelDcacheWritebackRange((void*)/*ALIGN_ADDR*/(v), /*ALIGN_SIZE(*/guget_memsize/*)+64*/);
+	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 
 	if (!(font->options & INTRAFONT_ACTIVE)) intraFontActivate(font);
 	
