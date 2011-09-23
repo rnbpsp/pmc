@@ -1,6 +1,7 @@
 #include <pspkernel.h>
 #include <psppower.h>
 #include <pspsdk.h>
+#include <RnBridge.h>
 #include "main.h"
 #include "callbacks.h"
 #include "font.h"
@@ -13,14 +14,14 @@
 #include <pspprof.h>
 #endif
 
-PSP_MODULE_INFO("PSP Music Center", 0, 0, 1);
+PSP_MODULE_INFO("PSP Music Center", 0, __PMC_VER_MAJOR, __PMC_VER_MINOR);
 PSP_HEAP_SIZE_KB( -(8*1024) );
 PSP_MAIN_THREAD_STACK_SIZE_KB(512); // 256 is default
 
 // keep away from vfpu as much as "possible"
 // i read some slide from sony it drains more battery (than not using it?)
 //	http://pc.watch.impress.co.jp/docs/2005/0323/kaigai166.htm
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU);
 
 extern void show_notdone();
 extern void show_filelist(bool show_playing=false);
@@ -44,6 +45,33 @@ int prev_submenu(int current)
 		return ABOUT;
 	else return current-1;
 }
+
+static NOINLINE
+SceUID pmc_loadmod(const char *modpath, int y)
+{
+	SceUID uid = sceKernelLoadModule(modpath, 0, NULL);
+	if (uid<0) 
+	{
+		pspDebugScreenPrintf("fail");
+		pspDebugScreenSetXY(33,y);
+		pspDebugScreenPrintf("Load module returned 0x%08x", uid);
+		gu_start(true);
+		vram.set_drawbuf(vram.get_dispbuf());
+		font->set_style(1.0f, COL_BLACK, 0, INTRAFONT_ALIGN_RIGHT);
+		font->printf(480-5, 272-5, "Press %c to quit", settings.ok_char);
+		vram.restore_drawbuf();
+		gu_end();
+		gu_sync();
+		state.running = false;
+	}
+	else
+	{
+		int ret;
+		sceKernelStartModule(uid, 0, 0, &ret, NULL);
+	}
+	return uid;
+}
+
 
 int main()
 {
@@ -143,29 +171,38 @@ int main()
 	pspDebugScreenPrintf("done");
 	wait_vblank();
 	pspDebugScreenSetXY(33,17);
-	pspDebugScreenPrintf("Loading hold- module...........");
+	pspDebugScreenPrintf("Loading support module.........");
 	
-  SceUID ff_modid = sceKernelLoadModule("hold-.prx", 0,NULL);
-	if (ff_modid<0)
-	{
-		pspDebugScreenPrintf("fail");
-		pspDebugScreenSetXY(33,18);
-		pspDebugScreenPrintf("Load module returned 0x%08x", ff_modid);
-		gu_start(true);
-		vram.set_drawbuf(vram.get_dispbuf());
-		font->set_style(1.0f, COL_BLACK, 0, INTRAFONT_ALIGN_RIGHT);
-		font->printf(480-5, 272-5, "Press %c to quit", settings.ok_char);
-		vram.restore_drawbuf();
-		gu_end();
-		gu_sync();
-		state.running = false;
+  SceUID hold_modid = -1, rnb_modid = -1;
+  rnb_modid = pmc_loadmod("RnBridge.prx", 18);
+	if (rnb_modid<0)
 		goto err;
-	}
-	else
+	
+	state.isPSPgo = get_PSPmodel()==4;
+	
+	pspDebugScreenPrintf("done");
+	wait_vblank();
+	pspDebugScreenSetXY(33,18);
+	pspDebugScreenPrintf("Unloading incompatible modules.");
+	
+	{
+  SceUID holdp_modid = get_moduleUID("Hold");
+	if (holdp_modid>=0)
 	{
 		int ret;
-		sceKernelStartModule(ff_modid, 0, 0, &ret, NULL);
+		sceKernelStopModule(holdp_modid, 0, NULL, &ret, NULL);
+		sceKernelUnloadModule(holdp_modid);
 	}
+	}
+	
+	pspDebugScreenPrintf("done");
+	wait_vblank();
+	pspDebugScreenSetXY(33,19);
+	pspDebugScreenPrintf("Loading hold- module...........");
+	
+  hold_modid = pmc_loadmod("hold-.prx", 20);
+	if (hold_modid<0)
+		goto err;
 	
 	pspDebugScreenPrintf("done");
 	wait_vblank();
@@ -267,11 +304,17 @@ err:
 	term_font();
 	term_gu();
 	
-	if (ff_modid>=0)
+	if (hold_modid>=0)
 	{
 		int ret;
-		sceKernelStopModule(ff_modid, 0, NULL, &ret, NULL);
-		sceKernelUnloadModule(ff_modid);
+		sceKernelStopModule(hold_modid, 0, NULL, &ret, NULL);
+		sceKernelUnloadModule(hold_modid);
+	}
+	if (rnb_modid>=0)
+	{
+		int ret;
+		sceKernelStopModule(rnb_modid, 0, NULL, &ret, NULL);
+		sceKernelUnloadModule(rnb_modid);
 	}
 	
 #if (_PROFILE)

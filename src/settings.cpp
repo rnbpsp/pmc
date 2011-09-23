@@ -92,7 +92,7 @@ static void show_exts()
 								9, 85, font->get_height()*0.8f + .5f, 40, 0.8f, 480-40,
 								INTRAFONT_ALIGN_LEFT, INTRAFONT_ALIGN_LEFT);
 								
-	list.fixup<NEEDED_EXT>(settings.exts);
+	list.fixup(settings.exts);
 	
 	unsigned cur_sel = 0, top_item = 0;
 	bool ext_menu = true;

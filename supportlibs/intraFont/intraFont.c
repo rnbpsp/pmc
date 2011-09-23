@@ -291,7 +291,7 @@ static int intraFontSwizzle(intraFont *font) {
 	font->texture = tData;
 	font->options |= INTRAFONT_CACHE_ASCII;
 
-	sceKernelDcacheWritebackInvalidateRange((void*)/*ALIGN_ADDR*/(tData), /*ALIGN_SIZE(*/textureSize/*)+64*/);
+	sceKernelDcacheWritebackRange((void*)/*ALIGN_ADDR*/(tData), /*ALIGN_SIZE(*/textureSize/*)+64*/);
 	__asm__ volatile ("nop\n\tsync\n\tnop\n\t");
 	return 1;
 }

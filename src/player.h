@@ -36,7 +36,7 @@ class PMC_PLAYER
 	AUDIO_DECODERS audio_decoder;
 	
 	int channel, audio_stream;
-	SceUID athread, vaudio_modid;
+	SceUID athread;
 	bool did_seek;
 	
 	int64_t duration; // duration in seconds
@@ -79,7 +79,6 @@ public:
 		channel(-1),
 		audio_stream(-1),
 		athread(-1),
-		vaudio_modid(-1),
 		did_seek(false),
 		duration(0),
 		frame_timer(0),

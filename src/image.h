@@ -74,7 +74,7 @@ public:
 
 	bool isValid(){ return (this->data!=NULL && this->bufsize!=0); };
 	
-	// never forget to writeback/invalidate cache after un/swizzling
+	// never forget to writeback cache after un/swizzling
 	void swizzle();
 	void invalidate() { pmc_wbinvalidate(data, bufsize); };
 	
@@ -97,7 +97,7 @@ public:
 	u32 width, height;		// dimensions of this tile
 	
 	Pmc_ImageTile()
-	: base(NULL),
+/*	: base(NULL),
 		x(0), y(0),
 		scaleX(0),
 		scaleY(0),
@@ -106,8 +106,8 @@ public:
 		offX1(0),
 		offY1(0),
 		width(0),
-		height(0)
-	{};
+		height(0)*/
+	{memset(this, 0, sizeof(this));};
 	
 	Pmc_ImageTile(Pmc_Image *img, u32 ofX0, u32 ofY0, u32 ofX1, u32 ofY1)
 	: base(img),

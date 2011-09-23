@@ -7,12 +7,12 @@
 #include <pspdisplay.h>
 #include <psputility.h>
 #include <pspvaudio.h>
+#include <cooleyesBridge.h>
 
 PMC_PLAYER player;
 
 #define output_silence(buf, num) \
 	memset((void*)buf, 0, num*4)
-//	for(int z=0; z<num; ++z) ((int*)buf)[z] = 0
 
 bool
 PMC_PLAYER::sceaudio_callback(void *dest, int& written, AVPacket& packet)
@@ -226,9 +226,9 @@ PMC_PLAYER::open(const char *path, const char *name)
 	album_art = load_albumArt(full_path);
 	
 	fd = sceIoOpen(full_path, PSP_O_RDONLY, 0);
-	if (fd<0) error_openfile();
+	if (fd<0) error_openfile();/*
 	if (sceIoChangeAsyncPriority(fd, 0x11) < 0)
-		error_openfile();
+		error_openfile();*/
 	
 	io_mem = (u8*)av_malloc(PMC_BUFIO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
 	if (!io_mem)
@@ -249,20 +249,7 @@ PMC_PLAYER::open(const char *path, const char *name)
 		sceIoClose(fd);
 		error_openfile();
 	}
-	/*
-	vaudio_modid = sceKernelLoadModule("flash0:/kd/vaudio.prx", 0, NULL);
-	if (vaudio_modid < 0)
-	{
-		printf("Cannot load vaudio.prx. 0x%08x\n", vaudio_modid);
-		show_errorEx("Error: Cannot load vaudio.prx = 0x%08x", vaudio_modid);
-		error_openfile();
-	}
-	else
-	{
-		int v_ret;
-		sceKernelStartModule(vaudio_modid, 0, 0, &v_ret, NULL);
-	}
-	*/
+	
 	printf("opening file\n");
 	if (/*strcasecmp(get_ext(name), "wma")==0 &&*/ check_ifwma(io_ctx))
 		parser = PMC_PARSER_SCEWMA;
@@ -346,7 +333,8 @@ ffmpeg_fallback:
 	
 	athread = sceKernelCreateThread("Audio Player Thread", \
 		reinterpret_cast<int (*)(SceSize, void*)>(&PMC_PLAYER::audio_main),
-																0x12, 1024*1024, 0, NULL);
+														0x12, 1024*1024, \
+						PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU, NULL);
 	if (athread<0)
 	{
 		printf("Error: cannot create audio decoder thread.\n");
@@ -390,14 +378,7 @@ PMC_PLAYER::close()
 		format_ctx = NULL;
 		stream_ptr = NULL;
 	}
-	/*
-	if (vaudio_modid>=0)
-	{
-		int ret;
-		sceKernelStopModule(vaudio_modid, 0, NULL, &ret, NULL);
-		sceKernelUnloadModule(vaudio_modid);
-	}
-	*/
+	
 	if (io_ctx!=NULL)
 	{
 		const SceUID fd = reinterpret_cast<SceUID>(io_ctx->opaque);

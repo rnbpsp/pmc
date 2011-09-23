@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "font.h"
 #include <vector>
+#include "needed_exts.h"
 
 #ifndef MAX_PATH
 #define MAX_PATH 1024
@@ -27,7 +28,14 @@ extern u32 sort_mode;
 		else \
 			(s) = (xc)
 
+#define too_longUEx(xc, s, x, w, wf) \
+		if ( font->txtlen_ucs2(x) > (wf) ) \
+			(s) = (xc)+((w)/2); \
+		else \
+			(s) = (xc)
+
 #define too_long(i) too_longEx(xCoord, scroll, vec[i](), width, width*1.5f)
+#define too_longU(i) too_longUEx(xCoord, scroll, vec[i].get_lfn(), width, width*1.5f)
 
 class PMC_LIST
 {
@@ -111,9 +119,36 @@ public:
 			}
 			
 		//	scroll = too_long(0) ? xCoord+(width/2) : xCoord ;
-			too_long(0);
+			if (vec[0]())
+				too_long(0);
+			else too_longU(0);
 	};
 	
+	/*template<NEEDED_EXT>*/ FORCE_INLINE
+	void fixup(std::vector<NEEDED_EXT> &vec)
+	{
+			last_sel = 0;
+		//	sel_changed = false;
+		//	char dir[1024];
+		//	make_fullPath(dir, directory);
+			
+			if (vec.empty())
+			{
+				last_selection = last_first= 0;
+				return;
+			}
+			else if (vec.size()<num)
+			{
+				last_selection = vec.size()-1;
+				last_first= 0;
+			}
+			else
+			{
+				last_selection = num-1;
+				last_first = vec.size()-num;
+			}
+	};
+
 	void select_item(unsigned int index, unsigned int& f1rst, unsigned int& sel)
 	{
 		if (index >= last_first)
@@ -168,6 +203,57 @@ public:
 						sceGuScissor(xCoord-5,0,xCoord+width,272);
 						font->set_style(scale, item_color, item_shad, opts);
 						font->print(item, xCoord, ypos);
+						sceGuScissor(0, 0, 480, 272);
+					}
+			}
+	};
+
+	template<class T>
+	void print_ucs2(
+		unsigned int first,			// index of the first item to be printed
+		unsigned int selected,		// index of the selected item from the first to be printed
+		std::vector<T> &vec
+	)
+	{
+			if (vec.empty())
+			{
+				font->set_style(scale, item_color, item_shad, opts);
+				font->print("* EMPTY *", xCoord, yfirst);//, width );
+				return;
+			}
+	
+			const unsigned int cur_sel = first+selected;
+			if (cur_sel!=last_sel)
+			{
+				last_sel = cur_sel;
+		//		scroll = too_long(cur_sel) ? xCoord+(width/2) : xCoord ;
+			if (vec[cur_sel]())
+				too_long(cur_sel);
+			else too_longU(cur_sel);
+		//		sel_changed = true;
+			}
+			
+			for(unsigned int i=0; i<num && (first+i)<vec.size(); ++i)
+			{
+				//	const char *item = strcmp(list[first+i](), "..") == 0 ? "< . . >" : list[first+i]() ;
+					const char *item = vec[first+i]();
+					const u16 *lfn = vec[first+i].get_lfn();
+					const float ypos = yfirst + ((float)i * dist);
+					
+					if (i==selected)
+					{
+						font->set_style(scale, sel_color, sel_shad, opts_sel);
+						if (lfn)
+							scroll = font->print_ucs2(lfn, opts_sel&0x00002000?scroll:xCoord, ypos, width );
+						else
+							scroll = font->print(item, opts_sel&0x00002000?scroll:xCoord, ypos, width );
+					}
+					else
+					{
+						sceGuScissor(xCoord-5,0,xCoord+width,272);
+						font->set_style(scale, item_color, item_shad, opts);
+						if (lfn) font->print_ucs2(lfn, xCoord, ypos);
+						else			font->print(item, xCoord, ypos);
 						sceGuScissor(0, 0, 480, 272);
 					}
 			}

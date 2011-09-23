@@ -2,6 +2,7 @@
 #include <psptypes.h>
 #include <psppower.h>
 #include <pspdisplay.h>
+#include <RnBridge.h>
 
 #include "utils.h"
 #include "callbacks.h"
@@ -43,7 +44,13 @@ int power_callback(int unknown, int pwrflags, void *common)
 		{
 			printf("suspending....\n");
 		}
-		else if (pwrflags & PSP_POWER_CB_HOLD_SWITCH)
+		/*
+		if (pwrflags & PSP_POWER_CB_RESUMING)
+		if (pwrflags & PSP_POWER_CB_RESUME_COMPLETE)
+		if (pwrflags & PSP_POWER_CB_STANDBY)
+		*/
+		
+		if (pwrflags & PSP_POWER_CB_HOLD_SWITCH)
 		{
 			printf("hold switch held.\n");
 			state.hold_mode = true;
@@ -54,11 +61,7 @@ int power_callback(int unknown, int pwrflags, void *common)
 			state.hold_mode = false;
 	//		sceGuDisplay(1);
 		}
-		/*
-		if (pwrflags & PSP_POWER_CB_RESUMING)
-		if (pwrflags & PSP_POWER_CB_RESUME_COMPLETE)
-		if (pwrflags & PSP_POWER_CB_STANDBY)
-		*/
+		
 		sceDisplayWaitVblank();
 		printf("power callback called\n");
 

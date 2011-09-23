@@ -5,13 +5,14 @@
 class PMC_STATE
 {
 public:
-	bool running, exit_viaCallback, guith_done, hold_mode;
+	bool running, exit_viaCallback, guith_done, hold_mode, isPSPgo;
 	
 	PMC_STATE()
 	:	running(false),
 		exit_viaCallback(false),
 		guith_done(false),
-		hold_mode(false)
+		hold_mode(false),
+		isPSPgo(false)
 	{};
 };
 extern PMC_STATE state;
