@@ -47,7 +47,7 @@ public:
 		return intraFontPrintColumnEx(this->font, x, y, width, txt, (len==0) ? strlen(txt) : len);
 	};
 	
-	float printUCS2(const u16 *txt, float x, float y, float width=0.0f, int len=0)
+	float print_ucs2(const u16 *txt, float x, float y, float width=0.0f, int len=0)
 	{
 		intrafont_used = true;
 		return intraFontPrintColumnUCS2Ex(this->font, x, y, width, txt, (len==0) ? cccStrlenUCS2(txt) : len);
@@ -69,7 +69,7 @@ public:
 	};
 	
 	float txtlen(const char *str){ return intraFontMeasureText(this->font, str); };
-	float txtlenUCS2(const u16 *str){ return intraFontMeasureTextUCS2(this->font, str); };
+	float txtlen_ucs2(const u16 *str){ return intraFontMeasureTextUCS2(this->font, str); };
 };
 extern PMC_FONT *font;
 

@@ -3,12 +3,15 @@ TARGET = pmc
 #causes drive checking code to crash
 PMC_GDB_DEBUG = 0
 
-PMC_DEBUG = 1
-PMC_SHOWFPS = 1
+PMC_DEBUG = 0
+PMC_SHOWFPS = 0
 PMC_PROFILE = 0
 
 # 0.8
 FFMPEG_PORT = 0.8
+
+PMC_VER_MAJOR = 0
+PMC_VER_MINOR = 3
 
 
 MAIN = \
@@ -21,14 +24,18 @@ MAIN = \
 		src/topbar.o				\
 		src/callbacks.o			\
 		src/notdone.o				\
-		src/filelist.o			\
+		src/memcpy_vfpu.o		\
 		src/load_tga.o
 #		src/item_list.o			\
 
+FILEIO = \
+		src/fileio/filelist.o		\
+		src/fileio/fileio.o
+
 MUSIC_PLAYER = \
 		src/player.o \
-		src/art/album_art.o \
-		src/scevaudio.o
+		src/art/album_art.o
+#		src/scevaudio.o
 #		ffmpeg-prx/ffmpegMusic.o
 
 MUSIC_DECODER = \
@@ -50,11 +57,13 @@ PROFILING = \
 		src/prof/mcount.o
 
 OBJS := $(MAIN) \
+				$(FILEIO) \
 				$(NOW_PLAYING) \
 				$(MUSIC_DECODER) \
 				$(MUSIC_PLAYER) \
 				$(SETTINGS) \
-				cooleyesBridge/cooleyesBridge.o
+				src/RnBridge.o \
+				src/cooleyesBridge.o
 	
 # $(INTRAFONT) $(PICTURES) $(MUSIC) $(VIDEO)
 
@@ -66,11 +75,20 @@ MIPS_OPTIMIZATIONS = \
 		-fsingle-precision-constant
 #		-mfp32 -msingle-float -mhard-float
 
+PMC_VERSION = \
+	-D__PMC_VER_MAJOR=$(PMC_VER_MAJOR) \
+	-D__PMC_VER_MINOR=$(PMC_VER_MINOR)
+
 TAGLIB_DEFINES  = -DHAVE_ZLIB=1 -DWITH_ASF -DWITH_MP4 -DTAGLIB_NO_CONFIG
+
 CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
-				-D_SHOWFPS=$(PMC_SHOWFPS) -D_PROFILE=$(PMC_PROFILE) \
-				$(MIPS_OPTIMIZATIONS) $(TAGLIB_DEFINES)
-LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lavutil -lm \
+				-D_SHOWFPS=$(PMC_SHOWFPS) \
+				-D_PROFILE=$(PMC_PROFILE) \
+				$(MIPS_OPTIMIZATIONS) \
+				$(TAGLIB_DEFINES) \
+				$(PMC_VERSION)
+				
+LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lpng -lavutil -lm \
 		-lpspaudio -lpspaudiocodec -lpspasfparser \
 		-lpspfpu -lintraFont_mod -lpspgu -lminIni \
 		-lpspumd -lpsphprm -lpsprtc -lpsppower -lstdc++
@@ -78,7 +96,7 @@ LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lavutil -lm \
 #
 
 LIBDIR = ./lib ./lib/ffmpeg-$(FFMPEG_PORT)
-INCDIR = ./include ./include/taglib-1.7 ./include/ffmpeg-$(FFMPEG_PORT) ./cooleyesBridge
+INCDIR = ./src ./include ./include/taglib-1.7 ./include/ffmpeg-$(FFMPEG_PORT)
 #			./taglib ./taglib/toolkit ./taglib/ape \
 #			./taglib/mpeg ./taglib/mpeg/id3v1 \
 #			./taglib/mpeg/id3v2
@@ -114,7 +132,7 @@ DEP_FILES := $(OBJS:.o=.d)
 EXTRA_CLEAN=$(DEP_FILES) $(TARGET).sym gmon.out
 
 EXTRA_TARGETS = EBOOT.PBP
-PSP_EBOOT_TITLE = PSP Music Center v0.1 by RNB_PSP
+PSP_EBOOT_TITLE = PSP Music Center v$(PMC_VER_MAJOR).$(PMC_VER_MAJOR) by RNB_PSP
 PSP_EBOOT_ICON  = ./res/ICON0.PNG
 PSP_EBOOT_PIC1 = ./res/PIC0.PNG
 
@@ -141,7 +159,6 @@ install:
 
 help:
 	@echo "symfile:   generate symbols file using prxtool"
-	@echo "intrafont: rebuild and reinstall modded intrafont"
 
 # pull in dependency info for *existing* .o files
 -include $(DEP_FILES)

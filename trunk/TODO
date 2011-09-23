@@ -5,6 +5,7 @@ update ffmpeg patch
 compile ffmpeg into a prx and use like a shared library
 	waaaaaay faster compilation(link time) of the main app
 	only export needed functions
+	*malloc problem, needs to be done by main app and not prx
 
 use fatfs for reading "ms0:" using "msstor:"
 

@@ -1,10 +1,15 @@
 CHANGELOG
 	versions and changes are listed from latest(on top) to oldest
 
-r3
+version<next>
+	(*)added vfpu memcpy
+	(*)added RnBridge.prx(my own kernel bridge)
+	(*)added support for png album art (still has problems though)
+	(*)started rewrite of file browser code for unicode support
+	(*)fixed: first scanline of album art is not being read
 	(*)use sceIoDevctl to check for ms existence
 			fixes crash when listing drives
-			might not work for the PSPgo
+			not tested on a PSPgo
 	(*)added hold- module
 			just a slightly modified version of hold+ that doesn't interfere with the cpu clock
 			makes this app incompatible with hold+
@@ -20,7 +25,6 @@ r3
 	(*)added atrac3+ decoder in hardware(only RIFF and EA3 headers)
 	(*)hardware decode aac from files with adts header(*.aac only)
 	(*)update to ffmpeg 0.8.3
-	(*)fixed memleak for codecs that doesn't consume all packet.data in one call to decoding function
 	(*)added atrac3 hardware decoder
 	(*)large images are now fully displayed but with seams between 512*512 boundaries
 	(*)images now use smaller buffers

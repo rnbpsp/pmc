@@ -4,33 +4,6 @@
 #include <psputility.h>
 //#include <pspjpeg.h>
 #include <cstdio>
-extern "C" {
-#include <jpeglib.h>
-}
-
-#if 1
-#include <fileref.h>
-#include <tag.h>
-#include <tbytevector.h>
-#include <mpegfile.h>
-#include <id3v2tag.h>
-#include <id3v2framefactory.h>
-#include <id3v2frame.h>
-#include <id3v2header.h>
-#include <attachedpictureframe.h>
-#include <mp4file.h>
-#include <mp4tag.h>
-#else
-#include "fileref.h"
-#include "tag.h"
-#include "toolkit/tbytevector.h"
-#include "mpeg/mpegfile.h"
-#include "mpeg/id3v2/id3v2tag.h"
-#include "mpeg/id3v2/id3v2frame.h"
-#include "mpeg/id3v2/id3v2header.h"
-#include "mpeg/id3v2/frames/attachedpictureframe.h"
-#endif
-
 static Pmc_Image *load_id3art(const char *file);
 static Pmc_Image *load_mp4art(const char *file);
 
@@ -78,12 +51,20 @@ Pmc_Image *load_albumArt(const char *file)
 	return img;
 }
 
-static NOINLINE Pmc_Image *decode_jpgArt(void *data, size_t size)
+///////////////////////////////////////////////////////////////////////////////////////
+
+extern "C" {
+#include <jpeglib.h>
+}
+
+static NOINLINE
+Pmc_Image *decode_jpgArt(void *data, size_t size)
 {
 	int width=0, height=0;
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	JSAMPROW row_pointer[1] = {NULL};
+	u32 *pdata;
 	
 	// TODO
 	FILE *infile = fmemopen(data, size, "rb");
@@ -97,28 +78,120 @@ static NOINLINE Pmc_Image *decode_jpgArt(void *data, size_t size)
 	height = cinfo.image_height;
 	
 	Pmc_Image *img = new Pmc_Image(width, height, GU_PSM_8888);
-	if (!img) goto err;
+	if (!img) goto err_jpg;
 	
 	jpeg_start_decompress( &cinfo );
 	row_pointer[0] = new unsigned char[cinfo.output_width*cinfo.num_components];
-	while( cinfo.output_scanline < cinfo.image_height )
+	if (!row_pointer[0])
+	{
+		delete img;
+		goto err_jpg;
+	}
+	pdata = (u32*)img->data;
+	while( cinfo.output_scanline < cinfo.output_height )
 	{
 			jpeg_read_scanlines( &cinfo, row_pointer, 1 );
-			u32 *data = (u32*)img->data + (img->bufwidth*cinfo.output_scanline);
-
 			for ( unsigned j=0, i=0; j<cinfo.image_width; ++j, i+=3 )
-				data[j] = RGBA8(row_pointer[0][i], row_pointer[0][i+1], row_pointer[0][i+2]);
+				pdata[j] = RGBA8(row_pointer[0][i], row_pointer[0][i+1], row_pointer[0][i+2]);
+			
+			pdata += img->bufwidth;
 	}
 	jpeg_finish_decompress( &cinfo );
 	
 	img->swizzle();
 	img->invalidate();
-err:
+err_jpg:
 	jpeg_destroy_decompress( &cinfo );
 	delete row_pointer[0];
 	fclose( infile );
 	return img;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+extern "C" {
+#include <png.h>
+}
+
+static
+void pnguser_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
+{
+	// ignore PNG warnings
+}
+
+static NOINLINE
+Pmc_Image *decode_pngArt(void *data, size_t size)
+{
+	Pmc_Image *img = NULL;
+	
+	// TODO
+	FILE *infile = fmemopen(data, size, "rb");
+	if (!infile) return NULL;
+	
+	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (png_ptr == NULL)
+	{
+		fclose(infile);
+		return NULL;
+	}
+	
+	png_set_error_fn(png_ptr, (png_voidp) NULL, (png_error_ptr) NULL, pnguser_warning_fn);
+	
+	png_uint_32 width, height;
+	int bit_depth, color_type, interlace_type;
+	
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (info_ptr == NULL)
+		goto err_png;
+	
+	png_init_io(png_ptr, infile);
+	png_set_sig_bytes(png_ptr, 0);
+	png_read_info(png_ptr, info_ptr);
+	
+	png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
+	if (interlace_type!=PNG_INTERLACE_NONE)
+		goto err_png;
+	
+	png_set_strip_16(png_ptr);
+	png_set_packing(png_ptr);
+	
+	if (color_type == PNG_COLOR_TYPE_PALETTE)
+		png_set_palette_to_rgb(png_ptr);
+	else if (color_type == PNG_COLOR_TYPE_GRAY)
+		png_set_gray_to_rgb(png_ptr);
+	
+	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) png_set_tRNS_to_alpha(png_ptr);
+	
+	png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
+	
+	png_read_update_info(png_ptr, info_ptr);
+	
+	img = new Pmc_Image(width, height, GU_PSM_8888);
+	if (!img) goto err_png;
+	
+	for (u32 y = 0; y < height; y++)
+		png_read_row(png_ptr, (u8*)((u32*)img->data + y*img->bufwidth), NULL);
+	
+	png_read_end(png_ptr, info_ptr);
+err_png:
+	png_destroy_read_struct(&png_ptr, NULL, NULL);
+	fclose(infile);
+	return img;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+#include <fileref.h>
+#include <tag.h>
+#include <tbytevector.h>
+#include <mpegfile.h>
+#include <id3v2tag.h>
+#include <id3v2framefactory.h>
+#include <id3v2frame.h>
+#include <id3v2header.h>
+#include <attachedpictureframe.h>
+#include <mp4file.h>
+#include <mp4tag.h>
 
 using namespace TagLib;
 static Pmc_Image *load_id3art(const char *file)
@@ -139,7 +212,7 @@ static Pmc_Image *load_id3art(const char *file)
 				if (pic->mimeType() == "image/jpeg")
 					return decode_jpgArt(pic->picture().data(), pic->picture().size());
 				else if (pic->mimeType() == "image/png")
-					printf("album art is png.\n");
+					return decode_pngArt(pic->picture().data(), pic->picture().size());
 			}
 		}
 		else // check for id3v2.2 frames
@@ -155,7 +228,7 @@ static Pmc_Image *load_id3art(const char *file)
 					if (pic->mimeType() == "image/jpeg")
 						return decode_jpgArt(pic->picture().data(), pic->picture().size());
 					else if (pic->mimeType() == "image/png")
-						printf("album art is png.\n");
+						return decode_pngArt(pic->picture().data(), pic->picture().size());
 				}
 			}
 		}
@@ -182,7 +255,7 @@ static Pmc_Image *load_mp4art(const char *file)
 				if (pic.format() == MP4::CoverArt::JPEG)
 					return decode_jpgArt(pic.data().data(), pic.data().size());
 				else if (pic.format() == MP4::CoverArt::PNG)
-					printf("album art is png.\n");
+					return decode_pngArt(pic.data().data(), pic.data().size());
 			}
 		}
 	}

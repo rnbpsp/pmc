@@ -78,9 +78,9 @@ openit:
 			if (player.album_art)
 			{
 				sceGuTexFilter(GU_LINEAR,GU_LINEAR);
-				sceGuTexWrap(GU_REPEAT, GU_REPEAT);
+		//		sceGuTexWrap(GU_REPEAT, GU_REPEAT);
 				drawImgStrip_large(player.album_art, 325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
-				sceGuTexWrap(GU_CLAMP, GU_CLAMP);
+		//		sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			}
 			
 			player_icons[PL_ICON_STAT_BASE].draw(21, 174);
@@ -187,7 +187,7 @@ openit:
 			else	if (ctrl.released.square)	break;
 			else	if (ctrl.pressed.triangle)player.loop();
 			else	if (ctrl.pressed.R)				return(1);
-			else	if (ctrl.pressed.value & (CTRL_OK|CTRL_RM_PLAY))
+			else	if (ctrl.pressed.value & (CTRL_OK|CTRL_RM_PLAY|CTRL_START))
 									player.pause();
 			else	if (ctrl.pressed.L)
 			{
