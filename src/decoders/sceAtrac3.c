@@ -47,7 +47,7 @@ err:
 }
 
 static
-int sceAtrac3_decode(s16 *buf, AVPacket *pkt, int size)
+int sceAtrac3_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {/*
 	if ( AV_RL16( &at3codec_ctx->extradata[6] ) )
 	{

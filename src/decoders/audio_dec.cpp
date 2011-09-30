@@ -19,7 +19,6 @@ extern const AUDIO_DECODER sceAsfWma;
 extern const AUDIO_DECODER sceAtrac3;
 extern const AUDIO_DECODER sceAtrac3p;
 
-char custom_tag[4][256];
 int custom_info[4];
 
 
@@ -85,7 +84,6 @@ AUDIO_DECODERS::open(
 void
 AUDIO_DECODERS::close()
 {
-	memset(&custom_tag, 0, 4*256);
 	memset(&custom_info, 0, 4*4);
 	if (audio_dec) audio_dec->close();
 	audio_dec = NULL;
@@ -94,7 +92,7 @@ AUDIO_DECODERS::close()
 };
 
 int
-AUDIO_DECODERS::decode(short *buf, AVPacket *pkt, int size)
+AUDIO_DECODERS::decode(short *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {
 	//printf("calling audio decoder caller\n");
 	u32 buff = reinterpret_cast<u32>(buf);
@@ -128,7 +126,7 @@ AUDIO_DECODERS::decode(short *buf, AVPacket *pkt, int size)
 		}
 		else if (pkt==NULL || pkt->size>0)
 		{
-			tmpbuf_size = audio_dec->decode((s16*)tmpbuf, pkt, C_AUDIOBUF_MAX_SIZE);
+			tmpbuf_size = audio_dec->decode((s16*)tmpbuf, codec_ctx, pkt, C_AUDIOBUF_MAX_SIZE);
 			if (tmpbuf_size<0)
 			{
 				tmpbuf_readpos = tmpbuf_size = 0;
@@ -162,10 +160,4 @@ int
 AUDIO_DECODERS::get_int(int v)
 {
 	return custom_info[v];
-}
-
-const char *
-AUDIO_DECODERS::get_str(int v)
-{
-	return custom_tag[v];
 }

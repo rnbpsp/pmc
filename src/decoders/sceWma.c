@@ -33,7 +33,6 @@
 #include <pspasfparser_cool.h>
 #include "./audio_dec.h"
 
-extern char custom_tag[4][256];
 extern int custom_info[4];
 
 static unsigned long wma_codec_buffer[65] __attribute__((aligned(64)));
@@ -118,8 +117,6 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 	u16* p16;
 	int npt = 0;
 	u16 wma_avg_bytes_per_sec;
-	
-//	strcpy(custom_tag[TAG_TITLE], strrchr(file, '/')+1);
 	
 	if ( sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC) < 0 )
 		goto error;
@@ -249,7 +246,7 @@ error:
 }
 
 static
-int sceWma_decode(s16 *buf, AVPacket *pkt, int size)
+int sceWma_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {
 	parser->sFrame.pData = SceWma.frame_buffer;
 	
@@ -273,7 +270,7 @@ int sceWma_decode(s16 *buf, AVPacket *pkt, int size)
 		printf("scewma err = 0x%08x\n", ret );
 		return -1;
 	}
-	return wma_codec_buffer[9]<0?-1:wma_codec_buffer[9];
+	return wma_codec_buffer[9];
 }
 
 static

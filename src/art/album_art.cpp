@@ -21,12 +21,12 @@ Pmc_Image *load_albumArt(const char *file)
 		return NULL;
 	}
 	
+	img->swizzle();
+	img->invalidate();
+
 	if (img->width==128 && img->height==128) return img;
 	
-//	const float scale = 128.f/(float)pmc_min<int>(pmc_max<int>(img->height,img->width),512);
 	const float scale = 128.f/(float)pmc_max<int>(img->height,img->width);
-//	if (img->width>512) img->width = 512;
-//	if (img->height>512) img->height = 512;
 	img->scaleX = img->width*scale;
 	img->scaleY = img->height*scale;
 	
@@ -98,8 +98,6 @@ Pmc_Image *decode_jpgArt(void *data, size_t size)
 	}
 	jpeg_finish_decompress( &cinfo );
 	
-	img->swizzle();
-	img->invalidate();
 err_jpg:
 	jpeg_destroy_decompress( &cinfo );
 	delete row_pointer[0];
@@ -110,21 +108,15 @@ err_jpg:
 ///////////////////////////////////////////////////////////////////////////////////////
 
 extern "C" {
-#include <png.h>
-}
-
-static
-void pnguser_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
-{
-	// ignore PNG warnings
+#include <libpng15/png.h>
 }
 
 static NOINLINE
 Pmc_Image *decode_pngArt(void *data, size_t size)
 {
+	if (png_sig_cmp((u8*)data, 0, 8)) return NULL;
 	Pmc_Image *img = NULL;
 	
-	// TODO
 	FILE *infile = fmemopen(data, size, "rb");
 	if (!infile) return NULL;
 	
@@ -135,14 +127,18 @@ Pmc_Image *decode_pngArt(void *data, size_t size)
 		return NULL;
 	}
 	
-	png_set_error_fn(png_ptr, (png_voidp) NULL, (png_error_ptr) NULL, pnguser_warning_fn);
-	
 	png_uint_32 width, height;
 	int bit_depth, color_type, interlace_type;
 	
 	png_infop info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL)
+	if (info_ptr == NULL) goto err_png;
+	
+	if (setjmp(png_jmpbuf(png_ptr)))
+	{
+		delete img;
+		img = NULL;
 		goto err_png;
+	}
 	
 	png_init_io(png_ptr, infile);
 	png_set_sig_bytes(png_ptr, 0);
@@ -152,17 +148,26 @@ Pmc_Image *decode_pngArt(void *data, size_t size)
 	if (interlace_type!=PNG_INTERLACE_NONE)
 		goto err_png;
 	
-	png_set_strip_16(png_ptr);
+//	png_set_expand(png_ptr);
 	png_set_packing(png_ptr);
+	png_set_scale_16(png_ptr);
 	
 	if (color_type == PNG_COLOR_TYPE_PALETTE)
 		png_set_palette_to_rgb(png_ptr);
-	else if (color_type == PNG_COLOR_TYPE_GRAY)
+	
+	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(png_ptr);
+	
+	if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+		png_set_expand_gray_1_2_4_to_8(png_ptr);
+	
+	if (color_type == PNG_COLOR_TYPE_GRAY ||
+			color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
 		png_set_gray_to_rgb(png_ptr);
 	
-	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) png_set_tRNS_to_alpha(png_ptr);
-	
-	png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
+	if (color_type == PNG_COLOR_TYPE_RGB ||
+			color_type == PNG_COLOR_TYPE_GRAY)
+		png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);	
 	
 	png_read_update_info(png_ptr, info_ptr);
 	
@@ -174,7 +179,7 @@ Pmc_Image *decode_pngArt(void *data, size_t size)
 	
 	png_read_end(png_ptr, info_ptr);
 err_png:
-	png_destroy_read_struct(&png_ptr, NULL, NULL);
+	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 	fclose(infile);
 	return img;
 }
@@ -209,10 +214,11 @@ static Pmc_Image *load_id3art(const char *file)
 			
 			if (pic->picture().size() > 0)
 			{
-				if (pic->mimeType() == "image/jpeg")
+				if (pic->mimeType() == "image/jpeg" || pic->mimeType() == "image/jpg")
 					return decode_jpgArt(pic->picture().data(), pic->picture().size());
 				else if (pic->mimeType() == "image/png")
 					return decode_pngArt(pic->picture().data(), pic->picture().size());
+				else printf("%s\n", pic->mimeType().toCString());
 			}
 		}
 		else // check for id3v2.2 frames
@@ -225,10 +231,11 @@ static Pmc_Image *load_id3art(const char *file)
 				
 				if (pic->picture().size() > 0)
 				{
-					if (pic->mimeType() == "image/jpeg")
+					if (pic->mimeType() == "image/jpeg" || pic->mimeType() == "image/jpg")
 						return decode_jpgArt(pic->picture().data(), pic->picture().size());
 					else if (pic->mimeType() == "image/png")
 						return decode_pngArt(pic->picture().data(), pic->picture().size());
+					else printf("%s\n", pic->mimeType().toCString());
 				}
 			}
 		}
@@ -241,7 +248,7 @@ static Pmc_Image *load_id3art(const char *file)
 static Pmc_Image *load_mp4art(const char *file)
 {
 	MP4::File tagfile(file, false);
-
+	
 	if( tagfile.tag() )
 	{
 		// Get the list of frames for a specific frame type

@@ -19,7 +19,7 @@ Pmc_ImageTile list_bkg;
 Pmc_ImageTile file_ico[2];
 
 static char cur_dir[1024] = "";
-static bool drives_shown = false;
+static bool drives_shown = false, umd_open = false;
 
 extern int show_nowplaying(const char *path=NULL, const char *name=NULL);
 extern void show_notdone();
@@ -147,8 +147,9 @@ static NOINLINE
 void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 {
 	files.clear();
-	//DIR_ENTRY tmp;
-	if ( state.isPSPgo ) // no need to check for existence as it's non-removable
+	drives_shown = true;
+	
+	if ( state.isPSPgo )
 	{
 		DIR_ENTRY tmp("ef0:/", "<Internal Flash>"); //eflash0a0f0
 		files.push_back(tmp);
@@ -162,9 +163,20 @@ void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 	
 	if (sceUmdCheckMedium())
 	{
+		sceUmdWaitDriveStat(UMD_WAITFORDISC);
+		
+#ifndef DEBUG
+		// seems like psplink is already mounting the UMD
+		// Mount UMD to disc0: file system
+		if (!umd_open && sceUmdActivate(1, "disc0:")<0)
+		{
+			umd_open = true;
+			return;
+		}
+#endif
+		
 		DIR_ENTRY tmp("disc0:/", "<UMD>");
 		files.push_back(tmp);
-		sceUmdWaitDriveStat(UMD_WAITFORDISC);
 	}
 	
 	/*
@@ -179,7 +191,6 @@ void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 		}
 	}
 	*/
-	drives_shown = true;
 }
 
 
@@ -240,10 +251,11 @@ bool go_UpOneDir(std::vector<DIR_ENTRY> &files, \
 #define ITEMS_DISTANCE	(LIST_FONTHEIGHT+2.f)
 #define POS_CURSOR(x)		( (LIST_YPOS-LIST_FONTHEIGHT) + (ITEMS_DISTANCE*(x)) )
 
-#define CTX_NONE			0
-#define CTX_OPEN			1
-#define CTX_REFRESH		2
-
+enum {
+ CTX_NONE,
+ CTX_OPEN,
+ CTX_REFRESH
+};
 
 static int file_ctxmenu(const char *path, const char *file, const u16 *disp_name)
 {
@@ -317,11 +329,11 @@ static int file_ctxmenu(const char *path, const char *file, const u16 *disp_name
 			{
 				switch (sel_item)
 				{
-					case 0: return file_isNeeded?CTX_OPEN:0;
+					case 0: return file_isNeeded?CTX_OPEN:CTX_NONE;
 					case 2:
-					case 3: if (file_isNeeded) show_notdone(); return 0;
+					case 3: if (file_isNeeded) show_notdone(); return CTX_NONE;
 					case 4: return CTX_REFRESH;
-					case 1: if (strncasecmp(path, "disc0:", 6)) show_notdone(); return 0;
+					case 1: if (strncasecmp(path, "disc0:", 6)) show_notdone(); return CTX_NONE;
 				}
 			}
 	}

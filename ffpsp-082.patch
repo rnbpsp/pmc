@@ -92,3 +92,47 @@ diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavutil/mips/bswap.h ffmpeg
 +}
 +
 +#endif /* AVUTIL_MIPS_BSWAP_H */
+diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavformat/oma.c ffmpeg-0.8.2-psp/libavformat/oma.c
+--- ffmpeg/oma.c	2011-09-07 21:34:40 +0800
++++ ffmpeg-new/oma.c	2011-09-26 09:33:01 +0800
+@@ -139,6 +139,16 @@
+             framesize = ((codec_params & 0x3FF) * 8) + 8;
+             st->codec->sample_rate = srate_tab[(codec_params >> 13) & 7]*100;
+             st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
++            
++            st->codec->extradata_size = 2;
++            edata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
++            if (!edata)
++                return AVERROR(ENOMEM);
++
++            st->codec->extradata = edata;
++            edata[0] = buf[0x22];
++            edata[1] = buf[0x23];
++
+             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+             av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
+             break;
+diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavformat/riff.c ffmpeg-0.8.2-psp/libavformat/riff.c
+--- ffmpeg/riff.c	2011-09-07 21:34:40 +0800
++++ ffmpeg-new/riff.c	2011-09-26 09:32:48 +0800
+@@ -535,7 +535,20 @@
+             }
+             cbSize -= 22;
+             size -= 22;
++            if (size>=4 && codec->codec_id == CODEC_ID_ATRAC3P)
++            {
++                avio_skip(pb, 2);
++                size -= 2;
++                cbSize = 2;
++            }
++        }
++        else if (id == 0xfffe && codec->codec_id == CODEC_ID_ATRAC3P && size >= 26)
++        {
++            avio_skip(pb, 24);
++            size -= 24;
++            cbSize = 2;
+         }
++        
+         codec->extradata_size = cbSize;
+         if (cbSize > 0) {
+             av_free(codec->extradata);

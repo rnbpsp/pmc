@@ -7,14 +7,11 @@
 static int codec_type = 0;
 static unsigned long sceMp3Aac_buf[65] __attribute__((aligned(64)));
 AVBitStreamFilterContext *bsf_ctx = NULL;
-AVCodecContext *codec_ctx_ = NULL;
+//AVCodecContext *codec_ctx_ = NULL;
 
 // AVPacket.data is only 16bytes aligned
 // sceAudiocodec requires 64bytes alignment
 //static void *sceMp3Aac_tmpbuf = NULL;
-
-// what is the maximum size of an mp3/2/1/aac frame?
-#define MAX_FRAME_SIZE_MP3AAC 32000
 
 static
 void sceMp3Aac_close()
@@ -26,7 +23,7 @@ void sceMp3Aac_close()
 	
 	if (bsf_ctx) av_bitstream_filter_close(bsf_ctx);
 	bsf_ctx = NULL;
-	codec_ctx_ = NULL;
+//	codec_ctx_ = NULL;
 	
 	sceUtilityUnloadAvModule(PSP_AV_MODULE_AVCODEC);
 }
@@ -58,7 +55,7 @@ int sceMp3Aac_open(AVCodecContext *ctx, int type_)
 	}
 	
 	codec_type = type;
-	codec_ctx_ = ctx;
+//	codec_ctx_ = ctx;
 	return 1;
 	
 err:
@@ -67,12 +64,12 @@ err:
 }
 
 static
-int sceMp3Aac_decode(s16 *buf, AVPacket *pkt, int size)
+int sceMp3Aac_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {
 	unsigned long data = 0, data_size = 0;
 	if (bsf_ctx)
 	{
-		av_bitstream_filter_filter(bsf_ctx, codec_ctx_, NULL,
+		av_bitstream_filter_filter(bsf_ctx, codec_ctx, NULL,
 													(u8**)&data, (int*)&data_size,
 													pkt->data, pkt->size, 0);
 	}

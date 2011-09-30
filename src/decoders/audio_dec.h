@@ -13,7 +13,7 @@ extern "C" {
 
 typedef struct
 {
-	int (*decode)(s16 *buf, AVPacket *pkt, int size);
+	int (*decode)(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size);
 	void (*close)();
 	int64_t (*seek)(int64_t seconds);
 }AUDIO_DECODER;
@@ -41,7 +41,7 @@ public:
 					AVIOContext* io_ctx, int filetype);
 	
 	void close();
-	int decode(short *buf, AVPacket *pkt, int size);
+	int decode(short *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size);
 	bool isSceCodec()
 	{
 		extern const AUDIO_DECODER ffmpegAudio;

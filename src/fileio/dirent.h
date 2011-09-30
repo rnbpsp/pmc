@@ -38,7 +38,7 @@ public:
 		
 		if (in.lfn)
 		{
-			const int len = cccStrlenUCS2(in.lfn)+1;
+			const int len = cccStrlenUCS2(in.lfn);
 			lfn = new u16[len+1];
 			memcpy((void*)lfn, (void*)in.lfn, len*2);
 			lfn[len] = 0;
@@ -122,7 +122,7 @@ public:
 		if ( (settings.fileSort_mode & ALPHABETICALLY) \
 					 && (this->dtype==second.dtype) )
 		{
-			if ( alphabetical_cmp(this->name, second.name) < 0 )
+			if ( /*alphabetical_cmp*/strcasecmp(this->name, second.name) < 0 )
 				return true;
 			return false;
 		}

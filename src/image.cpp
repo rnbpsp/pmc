@@ -37,8 +37,6 @@ Pmc_Image::Pmc_Image(int sizeX, int sizeY, u32 color_space, bool alloc)
 		return;
 	}
 	
-	// these two needs to be a power of two
-	// but one can do a workaround(offsets) to save memory(i won't, too much hustle, unless the image is too big)
 	bufwidth = ALIGN_SIZE(sizeX, 16);
 	bufheight = ALIGN_SIZE(sizeY, 16);
 	

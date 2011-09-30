@@ -155,6 +155,7 @@
   <VirtualDirectory Name="src">
     <VirtualDirectory Name="art">
       <File Name="../src/art/album_art.cpp"/>
+      <File Name="../src/art/tags.cpp"/>
     </VirtualDirectory>
     <VirtualDirectory Name="decoders">
       <File Name="../src/decoders/audio_dec.cpp"/>

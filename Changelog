@@ -2,9 +2,13 @@ CHANGELOG
 	versions and changes are listed from latest(on top) to oldest
 
 version<next>
+	(*)tags from asf(including wma) files are now read
+	(*)tags are now encoded to ucs2 when opening files
+			before, intrafont is encoding them per call to the print funciton
+	(*)now displays album art with "image/jpg" mime type (well, specs says "image/jpeg")
 	(*)added vfpu memcpy
 	(*)added RnBridge.prx(my own kernel bridge)
-	(*)added support for png album art (still has problems though)
+	(*)added support for png album art
 	(*)started rewrite of file browser code for unicode support
 	(*)fixed: first scanline of album art is not being read
 	(*)use sceIoDevctl to check for ms existence

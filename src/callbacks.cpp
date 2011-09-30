@@ -58,6 +58,7 @@ int power_callback(int unknown, int pwrflags, void *common)
 		}
 		else //if(state.hold_mode)
 		{
+			printf("hold switch not held.\n");
 			state.hold_mode = false;
 	//		sceGuDisplay(1);
 		}

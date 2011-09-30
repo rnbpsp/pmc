@@ -28,7 +28,7 @@ void* memcpy( void* dst, void* src, unsigned int size )
 					*dst32++ = *src32++;
 					size -= 4;
 				}
-				if (size==0) return (dst);		// fast out
+	//			if (size==0) return (dst);		 fast out
 				while (size>=16)
 				{
 					*dst32++ = *src32++;
@@ -43,14 +43,25 @@ void* memcpy( void* dst, void* src, unsigned int size )
 				break;
 			default:
 				{
-					register u32 a, b, c, d;
+					register u32 a, b, c, d, e;
 					while (size>=4)
 					{
 						a = *src8++;
 						b = *src8++;
 						c = *src8++;
 						d = *src8++;
-						*dst32++ = (d << 24) | (c << 16) | (b << 8) | a;
+						asm(".set	push\n\t"					// save assembler option
+							".set	noreorder\n\t"			// suppress reordering
+							"ins %0, %4, 24, 8"		"\n\t"
+							"ins %0, %3, 16, 8"		"\n\t"
+							"ins %0, %2, 8,  8"		"\n\t"
+							"ins %0, %1, 0,  8"		"\n\t"
+							".set	pop\n"					// restore assembler option
+						: "=r" (e)
+						: "r" (a), "r" (b), "r" (c), "r" (d)
+						);
+
+						*dst32++ = e;//(d << 24) | (c << 16) | (b << 8) | a;
 						size -= 4;
 					}
 					if (size==0) return (dst);		// fast out

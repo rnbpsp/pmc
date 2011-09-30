@@ -204,6 +204,7 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 		return;
 	}
 	
+	sceGuTexWrap(GU_REPEAT, GU_REPEAT);
 	sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 	sceGuTexMode(img->type, 0, 0, img->swizzled);
 	
@@ -264,7 +265,7 @@ void Pmc_ImageTile::draw(short X, short Y) {
 
 	if (!base->isValid()) return;
 	
-	image_vertex *vertex = gu_allocVert<image_vertex>(2);//(image_vertex*)sceGuGetMemory(sizeof(image_vertex)*2);
+	image_vertex *vertex = gu_allocVert<image_vertex>(2);
 
 	if (cur_texture != base->data || intrafont_used) {
 		cur_texture = base->data;
@@ -500,5 +501,5 @@ void gu_init(/*u32 list_size*/)
 	sceGuSync(0,0);
 
 	sceGuDisplay(1);
-	sceKernelDcacheWritebackInvalidateAll();
+	sceKernelDcacheWritebackAll();
 }
