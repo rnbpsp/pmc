@@ -14,44 +14,9 @@ PMC_PLAYER player;
 #define output_silence(buf, num) \
 	memset((void*)buf, 0, num*4)
 
-bool
-PMC_PLAYER::sceaudio_callback(void *dest, int& written, AVPacket& packet)
-{
-	written = 0; //written number of samples
-	short *dest0 = (short*)dest;
-	while(written!=PMC_AUDIO_NUM_SAMPLES)
-	{
-			// remaining number of samples to write
-			int remaining = PMC_AUDIO_NUM_SAMPLES-written;
-
-			if (playing & PLAYER_PAUSED)
-			{
-				output_silence(dest0, remaining);
-				return false;
-			}
-			
-			int decoded = audio_decoder.decode((short*)dest0, 0, remaining*4);
-			if (decoded<0)
-			{
-				// try two more times
-				for(int i=0; i<2; ++i)
-				{
-					decoded = audio_decoder.decode((short*)dest0, 0, remaining*4);
-					if (decoded>=0) goto retry_success;
-				}
-				output_silence(dest0, remaining);
-				return true;
-			}
-			
-retry_success:
-			dest0 += decoded/2;
-			written += decoded/4;
-	}
-	return false;
-}
 
 bool
-PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
+PMC_PLAYER::audio_callback(void *dest, int& written, AVPacket* packet)
 {
 	written = 0; //written number of samples
 	short *dest0 = (short*)dest;
@@ -62,22 +27,22 @@ PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
 			// remaining number of samples to write
 			int remaining = PMC_AUDIO_NUM_SAMPLES-written;
 
-			if (playing & PLAYER_PAUSED)
+			if (player.playing & PLAYER_PAUSED)
 			{
 				output_silence(dest0, remaining);
 				return false;
 			}
 			
-			if (packet.size<=0)
+			if (packet && packet->size<=0)
 			{
-					while( av_read_frame(format_ctx, &packet) >= 0 )
+					while( av_read_frame(player.format_ctx, packet) >= 0 )
 					{
-						if( packet.stream_index == audio_stream )
+						if( packet->stream_index == player.audio_stream )
 							goto dec;
 						
-						else av_free_packet(&packet);
+						else av_free_packet(packet);
 						
-						if (playing & PLAYER_PAUSED)
+						if (player.playing & PLAYER_PAUSED)
 						{
 							output_silence(dest0, remaining);
 							return false;
@@ -90,7 +55,7 @@ PMC_PLAYER::ffaudio_callback(void *dest, int& written, AVPacket& packet)
 			}
 			
 dec:
-			int decoded = audio_decoder.decode((short*)dest0, &packet, remaining*4);
+			int decoded = player.audio_decoder.decode((short*)dest0, player.codec_ctx, packet, remaining*4);
 			if (decoded<=0)
 			{
 				if (retries==0)
@@ -113,7 +78,6 @@ dec:
 
 int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 {
-	// i think double buffering is still necessary
 	// sceAudioSrc only supports stereo?
 	short buf[2][PMC_AUDIO_NUM_SAMPLES*2];//[2];
 	
@@ -146,21 +110,35 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 			continue;
 		}
 		else
-		{
-			if (player.parser==PMC_PARSER_FFMPEG)
-				end = player.ffaudio_callback(buf[curbuf], written, pkt);
-			else
-				end = player.sceaudio_callback(buf[curbuf], written, pkt);
-		}
+			end = player.audio_callback(buf[curbuf], written, player.parser==PMC_PARSER_FFMPEG?&pkt:NULL);
+
 		player.frame_timer += written;
-		/*sceVaudioOutputBlocking*/sceAudioSRCOutputBlocking(player.volume, buf[curbuf]);
+		if (player.channel==8)
+			sceAudioSRCOutputBlocking(player.volume, buf[curbuf]);
+		else
+		{
+			int rest = sceAudioGetChannelRestLen(player.channel);
+			if (rest > 0)
+			{
+				rest = (float)rest*(player.get_samprate()==44100?(1000000.f/44100.f):(1000000.f/48000.f));
+				if (rest > 150) sceKernelDelayThread(rest-100);
+				
+				while (sceAudioGetChannelRestLen(player.channel)>0);
+			}
+			
+			if (!end)
+				sceAudioOutput(player.channel, player.volume, buf[curbuf]);
+			else
+				sceAudioOutputBlocking(player.channel, player.volume, buf[curbuf]);
+		}
+		
 		curbuf ^= 1;
 		if (end)
-	//	{
-/*			if ((player.mode&PL_MODE_LOOP_ONE) && player.seek(0))
-				continue;*/
+		{
+			if (strcasecmp(get_ext(player.filename), "mp3") && (player.mode&PL_MODE_LOOP_ONE) && player.seek(0))
+				continue;
 			player.playing = PLAYER_STOPPED;
-	//	}
+		}
 	}
 	
 	sceKernelExitThread(0);
@@ -199,11 +177,13 @@ int64_t pmc_avio_seek(void *opaque, int64_t offset, int whence)
 */
 #define error_openfile() \
 	do { \
-		delete full_path; \
 		this->close(); \
 		return false; \
 	}while(0)
+//		delete full_path;
 
+#include <libccc_mod.h>
+extern void fill_tags(AVDictionary *metadata, const char *fullpath, const cccCode *filename);
 extern "C" int check_ifwma(AVIOContext* fd);
 Pmc_Image *load_albumArt(const char *file);
 bool
@@ -212,14 +192,13 @@ PMC_PLAYER::open(const char *path, const char *name)
 	settings.cpu = 333;
 	this->close();
 	
-	char *full_path;
 	SceUID fd;
 	u8 *io_mem;
 	
 	filepath = strdup(path);
 	filename = strdup(name);
 	
-	full_path = new char[strlen(filepath) + strlen(filename) + 1];
+	char full_path[strlen(filepath) + strlen(filename) + 1];
 	strcpy(full_path, filepath);
 	strcat(full_path, filename);
 	
@@ -251,7 +230,7 @@ PMC_PLAYER::open(const char *path, const char *name)
 	}
 	
 	printf("opening file\n");
-	if (/*strcasecmp(get_ext(name), "wma")==0 &&*/ check_ifwma(io_ctx))
+	if (check_ifwma(io_ctx))
 		parser = PMC_PARSER_SCEWMA;
 	else
 	{
@@ -305,8 +284,12 @@ ffmpeg_fallback:
 		stream_ptr = format_ctx->streams[audio_stream];
 		codec_ctx = stream_ptr->codec;
 		
-		if (codec_ctx->sample_fmt!=SAMPLE_FMT_S16)
+		if (codec_ctx->codec_id!=CODEC_ID_ATRAC3P && \
+				codec_ctx->sample_fmt!=SAMPLE_FMT_S16)
+		{
 			printf("sample format is not S16.\n");
+			error_openfile();
+		}
 	}
 	
 	if (!audio_decoder.open(codec_ctx, full_path, io_ctx, parser))
@@ -321,14 +304,25 @@ ffmpeg_fallback:
 		error_openfile();
 	}
 	
+	// TODO: 48khz
+	if (get_samprate()==44100 || get_samprate()==48000)
 	{
-	channel = /*sceVaudioChReserve*/sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, get_samprate(), 2);
-	if (channel<0)
-	{
-		printf("Cannot reserve audio channel: 0x%08x\n", channel);
-		show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, get_samprate());
-		error_openfile();
+		if (cooleyesAudioSetFrequency(sceKernelDevkitVersion(), get_samprate())<0)
+			goto try_asrc;
+		channel = sceAudioChReserve(-1, PMC_AUDIO_NUM_SAMPLES, PSP_AUDIO_FORMAT_STEREO);
+		if (channel<0) goto try_asrc;
 	}
+	else
+	{
+try_asrc:
+		channel = sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, get_samprate(), 2);
+		if (channel<0)
+		{
+			printf("Cannot reserve audio channel: 0x%08x\n", channel);
+			show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, get_samprate());
+			error_openfile();
+		}
+		channel = 8;
 	}
 	
 	athread = sceKernelCreateThread("Audio Player Thread", \
@@ -342,17 +336,19 @@ ffmpeg_fallback:
 	}
 	
 	if (stream_ptr!=NULL)
-		duration = av_rescale(stream_ptr->duration, stream_ptr->time_base.num, stream_ptr->time_base.den); //stream_ptr->duration * av_q2d(stream_ptr->time_base);
+		duration = av_rescale(stream_ptr->duration, stream_ptr->time_base.num, stream_ptr->time_base.den);
 	else
 		duration = audio_decoder.get_int(NFF_TAG_DURATION);
 	
 	// just to make sure
 	if (duration==0) error_openfile();
 	
+	fill_tags(format_ctx?format_ctx->metadata:NULL, full_path, (const cccCode*)filename);
+	
 	playing = PLAYER_PLAYING;
 	sceKernelStartThread(athread,0,NULL);
 	
-	delete full_path;
+//	delete full_path;
 	return true;
 }
 
@@ -363,8 +359,16 @@ PMC_PLAYER::close()
 	sceKernelDelayThread(1000);
 	
 	if (athread>=0) sceKernelTerminateDeleteThread(athread);
-	if (channel>=0)
-		while (/*sceVaudioChRelease*/sceAudioSRCChRelease() < 0) sceKernelDelayThread(100);
+	if (channel==8)
+		while (sceAudioSRCChRelease() < 0)
+			sceKernelDelayThread(100);
+	else if (channel>=0)
+	{
+		while (sceAudioGetChannelRestLen(channel) > 0)
+			sceKernelDelayThread(100);
+		
+		sceAudioChRelease(channel);
+	}
 	
 	duration = frame_timer = 0;
 	channel = athread = audio_stream = -1;
@@ -396,81 +400,24 @@ PMC_PLAYER::close()
 	free(filename);
 	
 	filepath = filename = NULL;
+	
+	extern u16 tag_info[6][256];
+	memset(tag_info, 0, sizeof(tag_info));
 }
 
-const char*
+const u16*
 PMC_PLAYER::get_str(int tag)
 {
-	static char temp_str[512] = "";
+	char temp_str[256] = "";
+	static u16 temp_ustr[256];
+	extern u16 tag_info[6][256];
 
-	if (format_ctx==NULL && tag<=TAG_COPYRIGHT)
-	{
-		switch(tag)
-		{
-			case TAG_TITLE:
-			{
-				const char *from_tag = audio_decoder.get_str(TAG_TITLE);
-				return strlen(from_tag) ? from_tag : filename;
-			}
-			case TAG_ARTIST:
-			{
-				return audio_decoder.get_str(TAG_ARTIST);
-			}
-			case TAG_ALBUM:
-			{
-				return audio_decoder.get_str(TAG_ALBUM);
-			}
-			case TAG_COPYRIGHT:
-			{
-				const char *from_tag = audio_decoder.get_str(TAG_COPYRIGHT);
-				const int year = audio_decoder.get_int(NFF_TAG_YEAR);
-				
-				if (strlen(from_tag)>0)
-				{
-					if (year > 0)
-						sprintf(temp_str, "%s, %d", from_tag, year);
-					else
-						return from_tag;
-				}
-				else
-				{
-					//sprintf(taginfo_buf, "%d", year);
-					if (year>0) pmc_itoa(year, temp_str, 10);
-					else return "";
-				}
-				return temp_str;
-			}
-		}
-	}
+	if (tag<=TAG_SAMPRATE)
+		return tag_info[tag];
 	else
 	{
-		AVDictionaryEntry *avtag = NULL;
 		switch(tag)
 		{
-		#define get_metadata(field) avtag = av_dict_get(format_ctx->metadata, field, NULL, 0)
-
-			case TAG_TITLE:
-				get_metadata("title");
-				if (!avtag) return filename;
-				if (avtag->value)
-					return strlen(avtag->value) ? avtag->value : filename;
-				else return filename;
-			
-			case TAG_ARTIST:
-				get_metadata("artist");
-				if (!avtag) return "";
-				return (avtag->value) ? avtag->value : "";
-			
-			case TAG_ALBUM:
-				get_metadata("album");
-				if (!avtag) return "";
-				return (avtag->value) ? avtag->value : "";
-			
-			case TAG_COPYRIGHT:
-				get_metadata("copyright");
-				if (!avtag) return "";
-				return (avtag->value) ? avtag->value : "";
-		
 			case TIMER_STRING:
 			{
 				int64_t cur_sec =  this->get_time();
@@ -484,7 +431,7 @@ PMC_PLAYER::get_str(int tag)
 				else
 					sprintf(temp_str, "%lld:%02d:%02d", cur_sec, minutes, seconds);
 				
-				return temp_str;
+				break;
 			}
 			case DURATION_STRING:
 			{
@@ -499,7 +446,7 @@ PMC_PLAYER::get_str(int tag)
 				else
 					sprintf(temp_str, "%lld:%02d:%02d", cur_sec, minutes, seconds);
 				
-				return temp_str;
+				break;
 			}
 			case TIMER_OVER_DURATION:
 			{
@@ -522,24 +469,16 @@ PMC_PLAYER::get_str(int tag)
 									time_sec, minutes, seconds, \
 									dur_sec, dur_minutes, dur_seconds);
 				
-				return temp_str;
+				break;
 			}
-			
-			case TAG_BITRATE:
-				pmc_itoa((codec_ctx?codec_ctx->bit_rate:audio_decoder.get_int(NFF_TAG_BITRATE))/1000, temp_str, 10);
-				strcat(temp_str, " kbps");
-				return temp_str;
-			
-			case TAG_SAMPRATE:
-				pmc_itoa(get_samprate(), temp_str, 10);
-				strcat(temp_str, " Hz");
-				return temp_str;
-			default:
-				return "";
 		}
-	}	
+		int tlen = strlen(temp_str);
+		cccUTF8toUCS2(temp_ustr, tlen, (const cccCode*)temp_str);
+		temp_ustr[tlen] = 0;
+		return temp_ustr;
+	}
 	//return filename;
-	return "";
+	return temp_ustr;
 }
 
 bool

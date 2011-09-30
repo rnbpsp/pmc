@@ -119,6 +119,7 @@ int main()
 	init_font();
 	font = new PMC_FONT("flash0:/font/ltn0.pgf", INTRAFONT_CACHE_LARGE);
 	font->set_style(0.8f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
+	cccSetErrorCharUCS2((cccUCS2)' ');
 	
 	pspDebugScreenPrintf("done");
 	wait_vblank();

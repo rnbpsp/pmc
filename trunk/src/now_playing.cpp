@@ -36,10 +36,10 @@ openit:
 		name = strdup(name);
 		if ( !player.open(path, name) )
 		{
+			if (!state.hold_mode) show_errorEx("Cannot open %s file: %s", get_ext(name), name);
 			free((void*)path);
 			free((void*)name);
 			if (state.hold_mode) return(1);
-			show_errorEx("Cannot open %s file: %s", get_ext(name), name);
 			return(0);
 		}
 		else
@@ -78,9 +78,7 @@ openit:
 			if (player.album_art)
 			{
 				sceGuTexFilter(GU_LINEAR,GU_LINEAR);
-		//		sceGuTexWrap(GU_REPEAT, GU_REPEAT);
 				drawImgStrip_large(player.album_art, 325+128-player.album_art->scaleX, 66+128-player.album_art->scaleY);
-		//		sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			}
 			
 			player_icons[PL_ICON_STAT_BASE].draw(21, 174);
@@ -106,21 +104,21 @@ openit:
 			
 			{
 			const int text_width = player.album_art!=NULL ? 295 : 295+128 ;
-			font->set_encoding(CCC_CPUTF8);
+		//	font->set_encoding(CCC_CPUTF8);
 			font->set_style(0.9f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT|INTRAFONT_SCROLL_LEFT);
-			titleX = font->print(player.get_str(TAG_TITLE), titleX, 85, text_width);
+			titleX = font->print_ucs2(player.get_str(TAG_TITLE), titleX, 85, text_width);
 			
 			font->set_style(0.6f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT/*|INTRAFONT_STRING_UTF8*/);
 			
 			sceGuScissor(25, 0, 30+text_width, 272);
 			for (int i=1; i<6; ++i)
-				font->print(player.get_str(i), 30.f, 90+((font->get_height()+3.25f)*i));
+				font->print_ucs2(player.get_str(i), 30.f, 90+((font->get_height()+3.25f)*i));
 			sceGuScissor(0, 0, 480, 272);
-			font->set_encoding(0);
+	//		font->set_encoding(0);
 			}
 			
 			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_RIGHT);
-			font->print(player.get_str(TIMER_OVER_DURATION), 453, 210);
+			font->print_ucs2(player.get_str(TIMER_OVER_DURATION), 453, 210);
 			
 			font->set_style(0.7f, COL_WHITE, COL_BLACK, INTRAFONT_ALIGN_LEFT);
 			if (seeking)

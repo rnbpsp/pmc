@@ -1,10 +1,9 @@
 TARGET = pmc
 
-#causes drive checking code to crash
 PMC_GDB_DEBUG = 0
 
-PMC_DEBUG = 0
-PMC_SHOWFPS = 0
+PMC_DEBUG = 1
+PMC_SHOWFPS = 1
 PMC_PROFILE = 0
 
 # 0.8
@@ -34,7 +33,8 @@ FILEIO = \
 
 MUSIC_PLAYER = \
 		src/player.o \
-		src/art/album_art.o
+		src/art/album_art.o \
+		src/art/tags.o
 #		src/scevaudio.o
 #		ffmpeg-prx/ffmpegMusic.o
 
@@ -88,7 +88,7 @@ CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
 				$(TAGLIB_DEFINES) \
 				$(PMC_VERSION)
 				
-LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lpng -lavutil -lm \
+LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lpng15 -lavutil -lm \
 		-lpspaudio -lpspaudiocodec -lpspasfparser \
 		-lpspfpu -lintraFont_mod -lpspgu -lminIni \
 		-lpspumd -lpsphprm -lpsprtc -lpsppower -lstdc++
@@ -147,6 +147,7 @@ install:
 	cp -f -u ./EBOOT.PBP ./release/EBOOT.PBP
 	cp -f -u ./README ./release/README
 	cp -f -u ./Changelog ./release/Changelog
+	cp -f -u ./CREDITS ./release/CREDITS
 	cp -f -u ./res/icons.tga ./release/res/icons.tga
 	cp -f -u "./res/about ico.tga" "./release/res/about ico.tga"
 	cp -f -u "./res/file browser ico.tga" "./release/res/file browser ico.tga"
@@ -154,11 +155,13 @@ install:
 	cp -f -u "./res/playlist ico.tga" "./release/res/playlist ico.tga"
 	cp -f -u "./res/settings ico.tga" "./release/res/settings ico.tga"
 	cp -f -u "./res/splash.tga" "./release/res/splash.tga"
-	cp -f -u ./cooleyesBridge/cooleyesBridge.prx ./release/cooleyesBridge.prx
-	cp -f -u ./hold-.prx ./hold-.prx
+	cp -f -u ./cooleyesBridge.prx ./release/cooleyesBridge.prx
+	cp -f -u ./hold-.prx ./release/hold-.prx
+	cp -f -u ./RnBridge.prx ./release/RnBridge.prx
 
 help:
 	@echo "symfile:   generate symbols file using prxtool"
+	@echo "install:		copy to release folder"
 
 # pull in dependency info for *existing* .o files
 -include $(DEP_FILES)

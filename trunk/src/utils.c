@@ -20,7 +20,7 @@ int battery_percent(int text)
 	}
 	return -1;
 }
-
+/*
 int alphabetical_cmp(const char *str1, const char *str2)
 {
 
@@ -63,7 +63,7 @@ int alphabetical_cmp(const char *str1, const char *str2)
 	//if (char1==char2)
 		return 0;
 }
-
+*/
 /**
  * C++ version 0.4 char* style "itoa":
  * Written by Lukás Chmela
@@ -96,6 +96,7 @@ char* pmc_itoa(int value, char* result, int base)
 }
 
 #ifdef DEBUG
+__attribute__((no_instrument_function))
 void show_fps()
 {
 		static float curr_ms = 1.0f;
@@ -137,7 +138,7 @@ void show_fps()
 #endif
 ////////////////////////////////////////////////////////
 
-/* just checked and unaligned data works works
+/* just checked and unaligned data works
 #include <malloc.h>
 // TODO: Only AVPacket.data is needed to be aligned
 // force ffmpeg to 64byte align everything
@@ -152,14 +153,15 @@ void *av_malloc(size_t size)
 // won't compile w/o these (will get undefined references)
 
 #include <unistd.h>
-int usleep(	useconds_t usec)
+__attribute__((no_instrument_function))
+int usleep(	useconds_t usec )
 {
 	return sceKernelDelayThread(usec);
 }
 
 //#include <math.h>
 #include <pspfpu.h>
-//extern "C" int isfinitef( float f );
+__attribute__((no_instrument_function))
 int isfinitef( float f )
 {
 	return !pspFpuIsInf(f) && !pspFpuIsNaN(f);

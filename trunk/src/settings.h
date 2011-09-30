@@ -77,7 +77,6 @@ public:
 	void refresh();
 	bool isNeeded(const char *file, bool list=true);
 	void show_menu();
-	const u32 get_codepage() const;
 };
 extern PMC_SETTINGS settings;
 

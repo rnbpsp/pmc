@@ -42,8 +42,7 @@ class PMC_PLAYER
 	int64_t duration; // duration in seconds
 	int64_t frame_timer; // number of samples played
 	
-	/*friend*/ bool ffaudio_callback(void *dest, int& written, AVPacket& packet);
-	/*friend*/ bool sceaudio_callback(void *dest, int& written, AVPacket& packet);
+	static bool audio_callback(void *dest, int& written, AVPacket* packet);
 	static int audio_main(SceSize argc, void* argv);
 //	friend int show_nowplaying(const char *path, const char *name);
 public:
@@ -72,24 +71,10 @@ public:
 	int volume, playing, mode;
 	
 	PMC_PLAYER()
-	: format_ctx(NULL),
-		codec_ctx(NULL),
-		stream_ptr(NULL),
-		io_ctx(NULL),
-		channel(-1),
-		audio_stream(-1),
-		athread(-1),
-		did_seek(false),
-		duration(0),
-		frame_timer(0),
-		filepath(NULL),
-		filename(NULL),
-		album_art(NULL),
-		parser(PMC_PARSER_FFMPEG),
-		volume(PSP_AUDIO_VOLUME_MAX),
-		playing(0),
-		mode(0)
 	{
+		memset(this, 0, sizeof(this));
+		channel = audio_stream = athread = -1;
+		volume = PSP_AUDIO_VOLUME_MAX;
 		av_register_all();
 	};
 	
@@ -121,6 +106,10 @@ public:
 	{
 		return (codec_ctx?codec_ctx->channels:audio_decoder.get_int(NFF_TAG_CHANNELS));
 	};*/
+	int get_bitrate()
+	{
+		return (codec_ctx?codec_ctx->bit_rate:audio_decoder.get_int(NFF_TAG_BITRATE))/1000;
+	};
 	
 	int get_samprate()
 	{
@@ -149,7 +138,7 @@ public:
 #define TIMER_STRING		6
 #define DURATION_STRING 7
 #define TIMER_OVER_DURATION 8
-	const char *get_str(int tag);
+	const u16 *get_str(int tag);
 };
 extern PMC_PLAYER player;
 

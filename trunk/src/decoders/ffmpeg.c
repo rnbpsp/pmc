@@ -13,10 +13,10 @@ void ffmpegAdec_close()
 }
 
 static
-int ffmpegAdec_decode(s16 *buf, AVPacket *pkt, int size)
+int ffmpegAdec_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {
 	int frame_size_ptr = size;
-	int len = avcodec_decode_audio3( codec_ctx_,
+	int len = avcodec_decode_audio3( codec_ctx,
 													buf, &frame_size_ptr, pkt );
 //	int len = avcodec_decode_audio2( codec_ctx_,
 //													buf, &frame_size_ptr, pkt->data, pkt->size );
@@ -33,7 +33,7 @@ int ffmpegAdec_decode(s16 *buf, AVPacket *pkt, int size)
 	
 	if (frame_size_ptr<0)
 		printf("ffmpeg decoder error: 0x%08x, %d\n", frame_size_ptr, frame_size_ptr);
-	
+	codec_ctx_ = codec_ctx;
 	return frame_size_ptr;
 }
 
@@ -57,7 +57,7 @@ int ffmpegAdec_open(AVCodecContext *ctx)
 	// pspaudiolib only outputs 44100 stereo shorts
 	//if (codec_ctx_->sample_rate!=44100)
 	
-	codec_ctx_ = ctx;
+//	codec_ctx_ = ctx;
 //	ctx->parse_only = 1;
 	return 1;
 }

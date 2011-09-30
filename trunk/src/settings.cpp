@@ -20,29 +20,6 @@ extern void show_notdone();
 #define SET_EXTS 1
 #define SET_BOOKMARK 2
 
-static const struct {
-	const char *name;
-	u32 cp;
-}cp_struct[] = {
-	{"ASCII",			CCC_CP000},
-	{"US",				CCC_CP437},
-	{"Multilingual Latin I", CCC_CP850},
-	{"Russian",		CCC_CP866},
-	{"S-JIS",			CCC_CP932},
-	{"GBK",				CCC_CP936},
-	{"Korean",		CCC_CP949},
-	{"Big5",			CCC_CP950},
-	{"Cyrillic",	CCC_CP1251},
-	{"Latin II",	CCC_CP1252},
-	{"UTF-8",			CCC_CPUTF8}
-};
-
-const u32
-PMC_SETTINGS::get_codepage() const
-{
-	return cp_struct[code_page].cp;
-}
-
 /*
 static show_osk(const char *desc, bool ext)
 {
@@ -140,6 +117,8 @@ static void show_exts()
 						show_osk();*/
 					show_notdone();
 				}
+				else if (ctrl.pressed.R)			ext_menu = false;
+				else if (ctrl.pressed.L)			ext_menu = true;
 				else if (ctrl.pressed.up)		list.up(top_item, cur_sel);
 				else if (ctrl.pressed.down)	list.down(top_item, cur_sel);
 				else if (ctrl.pressed.left)	list.page_up(top_item, cur_sel);
@@ -270,9 +249,6 @@ void PMC_SETTINGS::refresh()
 	fileSort_mode = pmc_minmax<int>(fileSort_mode, 0, 3);
 	
 	show_unknown = static_cast<bool>(ini_getbool("SETTINGS", "show unknown files", 1, FILE_SETS));
-	
-	code_page = static_cast<int>(ini_getl("SETTINGS", "code page", 9, FILE_SETS));
-	code_page = code_page<0||code_page>10?9:code_page;
 	
 	// file extensions
 	{
