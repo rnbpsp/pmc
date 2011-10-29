@@ -93,8 +93,8 @@ diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavutil/mips/bswap.h ffmpeg
 +
 +#endif /* AVUTIL_MIPS_BSWAP_H */
 diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavformat/oma.c ffmpeg-0.8.2-psp/libavformat/oma.c
---- ffmpeg/oma.c	2011-09-07 21:34:40 +0800
-+++ ffmpeg-new/oma.c	2011-09-26 09:33:01 +0800
+--- ffmpeg-0.8.2/libavformat/oma.c	2011-09-07 21:34:40 +0800
++++ ffmpeg-0.8.2-psp/libavformat/oma.c	2011-09-26 09:33:01 +0800
 @@ -139,6 +139,16 @@
              framesize = ((codec_params & 0x3FF) * 8) + 8;
              st->codec->sample_rate = srate_tab[(codec_params >> 13) & 7]*100;
@@ -113,8 +113,8 @@ diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavformat/oma.c ffmpeg-0.8.
              av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
              break;
 diff -Naur '--from-file=ffmpeg-0.8.2' ffmpeg-0.8.2/libavformat/riff.c ffmpeg-0.8.2-psp/libavformat/riff.c
---- ffmpeg/riff.c	2011-09-07 21:34:40 +0800
-+++ ffmpeg-new/riff.c	2011-09-26 09:32:48 +0800
+--- ffmpeg-0.8.2/libavformat/riff.c	2011-09-07 21:34:40 +0800
++++ ffmpeg-0.8.2-psp/libavformat/riff.c	2011-09-26 09:32:48 +0800
 @@ -535,7 +535,20 @@
              }
              cbSize -= 22;

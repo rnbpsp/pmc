@@ -15,11 +15,6 @@ Pmc_Image *load_albumArt(const char *file)
 						img = load_id3art(file); // ID3v2(APIC, PIC) frames
 	if (!img)	img = load_mp4art(file); // MP4(covr) Cover art
 	if (!img) return NULL;
-	if (!img->isValid())
-	{
-		delete img;
-		return NULL;
-	}
 	
 	img->swizzle();
 	img->invalidate();
@@ -79,12 +74,19 @@ Pmc_Image *decode_jpgArt(void *data, size_t size)
 	
 	Pmc_Image *img = new Pmc_Image(width, height, GU_PSM_8888);
 	if (!img) goto err_jpg;
+	if (!img->isValid())
+	{
+		delete img;
+		img = NULL;
+		goto err_jpg;
+	}
 	
 	jpeg_start_decompress( &cinfo );
 	row_pointer[0] = new unsigned char[cinfo.output_width*cinfo.num_components];
 	if (!row_pointer[0])
 	{
 		delete img;
+		img = NULL;
 		goto err_jpg;
 	}
 	pdata = (u32*)img->data;
@@ -148,24 +150,23 @@ Pmc_Image *decode_pngArt(void *data, size_t size)
 	if (interlace_type!=PNG_INTERLACE_NONE)
 		goto err_png;
 	
-//	png_set_expand(png_ptr);
+	png_set_expand(png_ptr);
 	png_set_packing(png_ptr);
 	png_set_scale_16(png_ptr);
-	
+	/*
 	if (color_type == PNG_COLOR_TYPE_PALETTE)
 		png_set_palette_to_rgb(png_ptr);
 	
-	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-		png_set_tRNS_to_alpha(png_ptr);
-	
 	if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
 		png_set_expand_gray_1_2_4_to_8(png_ptr);
-	
+	*/
 	if (color_type == PNG_COLOR_TYPE_GRAY ||
 			color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
 		png_set_gray_to_rgb(png_ptr);
 	
-	if (color_type == PNG_COLOR_TYPE_RGB ||
+	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(png_ptr);
+	else if (color_type == PNG_COLOR_TYPE_RGB ||
 			color_type == PNG_COLOR_TYPE_GRAY)
 		png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);	
 	
@@ -173,6 +174,12 @@ Pmc_Image *decode_pngArt(void *data, size_t size)
 	
 	img = new Pmc_Image(width, height, GU_PSM_8888);
 	if (!img) goto err_png;
+	if (!img->isValid())
+	{
+		delete img;
+		img = NULL;
+		goto err_png;
+	}
 	
 	for (u32 y = 0; y < height; y++)
 		png_read_row(png_ptr, (u8*)((u32*)img->data + y*img->bufwidth), NULL);

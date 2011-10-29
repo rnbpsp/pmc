@@ -14,8 +14,7 @@ extern "C" {
 typedef struct
 {
 	int (*decode)(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size);
-	void (*close)();
-	int64_t (*seek)(int64_t seconds);
+	void (*close)(AVCodecContext *codec_ctx);
 }AUDIO_DECODER;
 
 #ifdef __cplusplus
@@ -23,7 +22,7 @@ typedef struct
 
 class AUDIO_DECODERS
 {
-	u8 *tmpbuf;
+	short *tmpbuf;
 	int tmpbuf_size;
 	int tmpbuf_readpos;
 	const AUDIO_DECODER *audio_dec;
@@ -34,27 +33,24 @@ public:
 		tmpbuf_readpos(0),
 		audio_dec(NULL)
 	{};
-	~AUDIO_DECODERS(){ this->close(); };
+	~AUDIO_DECODERS(){ this->close(NULL); };
 	
 	bool open(AVCodecContext *codec_ctx,
 							const char *filepath,
-					AVIOContext* io_ctx, int filetype);
+							AVIOContext* io_ctx);
 	
-	void close();
+	void close(AVCodecContext *codec_ctx);
 	int decode(short *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size);
-	bool isSceCodec()
+	bool isSceCodec() const
 	{
 		extern const AUDIO_DECODER ffmpegAudio;
 		return audio_dec!=&ffmpegAudio;
 	};
 	
-	int64_t seek(int64_t seconds);
-	
 	//called when seeking
 	void flush(AVCodecContext *codec_ctx);
 	
 	int get_int(int v);
-	const char *get_str(int v);
 };
 
 #endif // __cplusplus

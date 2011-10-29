@@ -6,7 +6,7 @@
 
 static int codec_type = 0;
 static unsigned long sceMp3Aac_buf[65] __attribute__((aligned(64)));
-AVBitStreamFilterContext *bsf_ctx = NULL;
+static AVBitStreamFilterContext *bsf_ctx = NULL;
 //AVCodecContext *codec_ctx_ = NULL;
 
 // AVPacket.data is only 16bytes aligned
@@ -14,7 +14,7 @@ AVBitStreamFilterContext *bsf_ctx = NULL;
 //static void *sceMp3Aac_tmpbuf = NULL;
 
 static
-void sceMp3Aac_close()
+void sceMp3Aac_close(AVCodecContext *ctx)
 {
 	codec_type = 0;
 	
@@ -23,7 +23,6 @@ void sceMp3Aac_close()
 	
 	if (bsf_ctx) av_bitstream_filter_close(bsf_ctx);
 	bsf_ctx = NULL;
-//	codec_ctx_ = NULL;
 	
 	sceUtilityUnloadAvModule(PSP_AV_MODULE_AVCODEC);
 }
@@ -40,7 +39,7 @@ int sceMp3Aac_open(AVCodecContext *ctx, int type_)
 	sceMp3Aac_buf[10] = ctx->sample_rate;
 	if ( sceAudiocodecInit(sceMp3Aac_buf, type) < 0 )
 	{
-		sceMp3Aac_close();
+		sceMp3Aac_close(ctx);
 		return 0;
 	}
 	
@@ -49,13 +48,12 @@ int sceMp3Aac_open(AVCodecContext *ctx, int type_)
 		bsf_ctx = av_bitstream_filter_init("aac_adtstoasc");
 		if (!bsf_ctx)
 		{
-			sceMp3Aac_close();
+			sceMp3Aac_close(ctx);
 			return 0;
 		}
 	}
 	
 	codec_type = type;
-//	codec_ctx_ = ctx;
 	return 1;
 	
 err:
@@ -98,6 +96,5 @@ const
 AUDIO_DECODER sceMp3Aac = 
 {
 	sceMp3Aac_decode,
-	sceMp3Aac_close,
-	NULL
+	sceMp3Aac_close
 };

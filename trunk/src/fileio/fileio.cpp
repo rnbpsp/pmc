@@ -2,13 +2,19 @@
 #include "fileio.h"
 #include "SceIO.h"
 
-
 PMC_DIR *pmc_dopen(const char *path)
 {
-//	if (strncasecmp(path, "ms0:")==0)
-		return new SceDio(path);
+	PMC_DIR *ret = NULL;
+//	if ( (!strncasecmp(path, "ms0", 3)) ||
+//			(!strncasecmp(path, "ef0", 3)) )
+//		ret = new FatDio(path);
 	
-	
+	if (!ret || !ret->isValid())
+	{
+		if (ret) delete ret;
+		ret = new SceDio(path);
+	}
+	return ret;
 }
 
 

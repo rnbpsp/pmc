@@ -9,7 +9,7 @@ int battery_percent(int text)
 	
 	if (scePowerIsBatteryExist())
 	{
-		if (scePowerIsBatteryCharging() && !text)
+		if (!text && scePowerIsBatteryCharging())
 		{
 			if 	( charge_effect==125 )
 						charge_effect = -25;

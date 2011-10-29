@@ -262,7 +262,6 @@ void drawImgStrip_large(Pmc_Image *img, int x, int y)
 }
 
 void Pmc_ImageTile::draw(short X, short Y) {
-
 	if (!base->isValid()) return;
 	
 	image_vertex *vertex = gu_allocVert<image_vertex>(2);

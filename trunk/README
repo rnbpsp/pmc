@@ -1,5 +1,5 @@
 PSP Music Center by RNB_PSP
-(rnbpsp@gmail.com)
+(code.google.com/p/pmc)
 
 Description
       This is a music player for the Sony PSP powered by
@@ -20,6 +20,7 @@ NOTES:
  I do not have the time to test if all of it works correctly.
  I have only tested the ff.: codec(file extension)
 		ATRAC3(at3 from umd)
+		ATRAC3+(SND0.AT3, oma)
     MP3(mp3, flv)
     AAC(aac, mp4, m4a)
     WMAv2(wma)
@@ -57,6 +58,6 @@ Configuration
  configuration files are inside the "ini" folder
  
  See settings.ini.
- cpu.ini holds file names that will be opened by the file browser
+ cpu.ini holds file extensions that will be opened by the file browser
  for playing. Not all formats supported are listed in it but you can add your
  own extensions.

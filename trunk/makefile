@@ -7,7 +7,13 @@ PMC_SHOWFPS = 1
 PMC_PROFILE = 0
 
 # 0.8
-FFMPEG_PORT = 0.8
+# vfpu
+# v85
+FFMPEG_PORT = v85
+
+USE_SCE_DECODERS = 0
+ENABLE_DYNAMIC_CPU = 0
+SHOW_ALBUM_ART = 0
 
 PMC_VER_MAJOR = 0
 PMC_VER_MINOR = 3
@@ -84,6 +90,9 @@ TAGLIB_DEFINES  = -DHAVE_ZLIB=1 -DWITH_ASF -DWITH_MP4 -DTAGLIB_NO_CONFIG
 CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
 				-D_SHOWFPS=$(PMC_SHOWFPS) \
 				-D_PROFILE=$(PMC_PROFILE) \
+				-D_USE_SCE_DECODERS=$(USE_SCE_DECODERS) \
+				-D_ENABLE_DYNAMIC_CPU=$(ENABLE_DYNAMIC_CPU) \
+				-D_SHOW_ALBUM_ART=$(SHOW_ALBUM_ART) \
 				$(MIPS_OPTIMIZATIONS) \
 				$(TAGLIB_DEFINES) \
 				$(PMC_VERSION)
@@ -105,18 +114,18 @@ LDFLAGS = -Wl,-allow-multiple-definition
 
 ifeq ($(PMC_DEBUG),1)
 
-ifeq ($(PMC_GDB_DEBUG),1)
-CFLAGS += -ggdb3 -DDEBUG -Winline -Wdisabled-optimization
-else
-CFLAGS += -O2 -ggdb3 -DDEBUG -Wdisabled-optimization
-endif
-
 ifeq ($(PMC_PROFILE), 1)
 OBJS += $(PROFILING)
 CFLAGS += -pg
 LIBS += -lpspprof
-else 
+else
 CFLAGS += -fomit-frame-pointer
+endif
+
+ifeq ($(PMC_GDB_DEBUG),1)
+CFLAGS += -fno-omit-frame-pointer -ggdb3 -DDEBUG -Winline -Wdisabled-optimization
+else
+CFLAGS += -O2 -ggdb3 -DDEBUG -Wdisabled-optimization
 endif
 
 else
@@ -125,7 +134,7 @@ PSP_LARGE_MEMORY = 1
 endif
 
 
-CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions -fcheck-new
+CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions -fno-check-new
 
 DEP_FILES := $(OBJS:.o=.d)
 
