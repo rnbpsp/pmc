@@ -32,20 +32,12 @@ int show_nowplaying(const char *path, const char *name)
 			return 0;
 		
 openit:
-		path = strdup(path); // for reopening if seeking to 0 failed
-		name = strdup(name);
-		if ( !player.open(path, name) )
+		const bool open_ret = player.open(path, name);
+		if (!open_ret)
 		{
-			if (!state.hold_mode) show_errorEx("Cannot open %s file: %s", get_ext(name), name);
-			free((void*)path);
-			free((void*)name);
-			if (state.hold_mode) return(1);
+			if (state.hold_mode) { return(1); }
+			else show_errorEx("Cannot open file: %s", name);
 			return(0);
-		}
-		else
-		{
-			free((void*)path);
-			free((void*)name);
 		}
 	}
 	else
@@ -126,7 +118,7 @@ openit:
 			
 			if (player.mode&PL_MODE_LOOP_ONE) font->print("Repeat 1", 21+80+40, 210);
 			else if (player.mode&PL_MODE_LOOP_ALL) font->print("Repeat All", 21+80+40, 210);
-			
+			font->printf(21+80+40+120, 210, "Boost: %d", player.boost);
 			show_topbar("Now Playing");
 			
 			gu_end();
@@ -193,6 +185,12 @@ openit:
 					player.seek(0);
 				else
 					return(-1);
+			}
+			else	if (ctrl.pressed.up)
+				player.boost += 1;
+			else	if (ctrl.pressed.down)
+			{
+				if (player.boost>0) player.boost -= 1;
 			}
 			else	if (ctrl.pressed.left)
 			{

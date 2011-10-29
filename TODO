@@ -1,6 +1,3 @@
-update ffmpeg patch
-	editted lavf/riff.c @ line 541
-	editted lavf/oma.c @ line 145
 
 compile ffmpeg into a prx and use like a shared library
 	waaaaaay faster compilation(link time) of the main app
@@ -12,3 +9,7 @@ use fatfs for reading "ms0:" using "msstor:"
 fix seams between 512px boundary on large images
 
 finish settings //ini not reading with minglue-psp.h
+
+update ffmpeg patch
+	dsputil.c
+	fmtconvert.c

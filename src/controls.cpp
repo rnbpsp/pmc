@@ -64,8 +64,8 @@ void Pmc_Ctrl::read(bool read_remote) {
 		button->rm_play = hprm_keys.play;
 		button->rm_next = hprm_keys.next;
 		button->rm_prev = hprm_keys.prev;
-		button->vol_up = hprm_keys.vol_up;
-		button->vol_down = hprm_keys.vol_down;
+		button->vol_up |= hprm_keys.vol_up;
+		button->vol_down|= hprm_keys.vol_down;
 	//	button->rm_hold = hprm_keys.hold;
 	}
 	

@@ -26,16 +26,13 @@ bool
 AUDIO_DECODERS::open(
 		AVCodecContext *codec_ctx,
 		const char *filepath,
-		AVIOContext* io_ctx,
-		int filetype )
+		AVIOContext* io_ctx )
 {
+#if _USE_SCE_DECODERS
 	if (codec_ctx==NULL)
 	{
-		if (filetype==PMC_PARSER_SCEWMA)
-		{
-			if (sceWma_open(filepath, io_ctx))
-				audio_dec = &sceAsfWma;
-		}
+		if (sceWma_open(filepath, io_ctx))
+			audio_dec = &sceAsfWma;
 	}
 	else
 	{
@@ -62,6 +59,7 @@ AUDIO_DECODERS::open(
 				break;
 		}
 	}
+#endif //_USE_SCE_DECODERS
 	
 	if ( !audio_dec )
 	{
@@ -72,20 +70,20 @@ AUDIO_DECODERS::open(
 	}
 	
 	// sceAsfParser needs 64byte alignment
-	tmpbuf = (u8*)memalign(64, C_AUDIOBUF_MAX_SIZE);
+	tmpbuf = (short*)memalign(64, C_AUDIOBUF_MAX_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
 	if (tmpbuf) return true;
 	
 	printf("failed allocating tmp buffer\n");
-	this->close();
+	this->close(codec_ctx);
 	
 	return false;
 }
 
 void
-AUDIO_DECODERS::close()
+AUDIO_DECODERS::close(AVCodecContext *codec_ctx)
 {
 	memset(&custom_info, 0, 4*4);
-	if (audio_dec) audio_dec->close();
+	if (audio_dec) audio_dec->close(codec_ctx);
 	audio_dec = NULL;
 	free(tmpbuf); tmpbuf = NULL;
 	tmpbuf_size = tmpbuf_readpos = 0;
@@ -95,54 +93,52 @@ int
 AUDIO_DECODERS::decode(short *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {
 	//printf("calling audio decoder caller\n");
-	u32 buff = reinterpret_cast<u32>(buf);
-	u32 tmp = reinterpret_cast<u32>(tmpbuf);
+	u32 buff = (u32)buf;
+	u32 tmp = (u32)tmpbuf;
 	int written = 0;
 	for(;;)
 	{
 		if (tmpbuf_size!=0)
 		{
-				if (size<tmpbuf_size)
-				{
-					memcpy((void*)(buff + written), (void*)(tmp + tmpbuf_readpos), size);
-					tmpbuf_readpos += size;
-					tmpbuf_size -= size;
-					return written + size;
-				}
-				else
-				if (tmpbuf_size==size)
-				{
-					memcpy((void*)(buff + written), (void*)(tmp + tmpbuf_readpos), size);
-					tmpbuf_readpos = tmpbuf_size = 0;
-					return written + size;
-				}
-				else
-				{
-					memcpy((void*)(buff + written), (void*)(tmp + tmpbuf_readpos), tmpbuf_size);
-					written += tmpbuf_size;
-					size -= tmpbuf_size;
-					tmpbuf_readpos = tmpbuf_size = 0;
-				}
+			short *bufff = (short*)(buff+written);
+			const short *tmpp = (short*)(tmp+tmpbuf_readpos);
+			int opsize;
+			if (0)//(codec_ctx && codec_ctx->channels==1) //crashing without report
+			{
+				opsize = (size>>1)<=tmpbuf_size ? size>>1 : tmpbuf_size;
+				
+				for (int i=0;i<opsize;++i)
+					bufff[i*2] = bufff[i*2+1] = tmpp[i];
+				
+				opsize<<=1;
+				written += opsize<<1;
+				size -= opsize<<1;
+			}
+			else
+			{
+				opsize = size<=tmpbuf_size ? size : tmpbuf_size;
+				memcpy(bufff, tmpp, opsize);
+				written += opsize;
+				size -= opsize;
+			}
+			
+			tmpbuf_readpos += opsize;
+			tmpbuf_size -= opsize;
+			if (size==0) break;
 		}
-		else if (pkt==NULL || pkt->size>0)
+		else if (!codec_ctx || pkt->size>0)
 		{
-			tmpbuf_size = audio_dec->decode((s16*)tmpbuf, codec_ctx, pkt, C_AUDIOBUF_MAX_SIZE);
+			tmpbuf_readpos=0;
+			tmpbuf_size = audio_dec->decode(tmpbuf, codec_ctx, pkt, C_AUDIOBUF_MAX_SIZE);
 			if (tmpbuf_size<0)
 			{
-				tmpbuf_readpos = tmpbuf_size = 0;
+				tmpbuf_size = 0;
 				return written==0 ? -1 : written;
 			}
 		}
-		else
-			return written;
+		else break;
 	}
 	return written;
-}
-
-int64_t
-AUDIO_DECODERS::seek(int64_t seconds)
-{
-	return audio_dec->seek(seconds);
 }
 
 void

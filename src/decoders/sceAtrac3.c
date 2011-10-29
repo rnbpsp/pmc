@@ -7,12 +7,10 @@
 
 static unsigned long sceAtrac3_buf[65] __attribute__((aligned(64)));
 //static unsigned long sceAtrac3_tmpbuf[1024*32/4] __attribute__((aligned(64)));
-static AVCodecContext *at3codec_ctx = NULL;
 
 static
-void sceAtrac3_close()
+void sceAtrac3_close(AVCodecContext *ctx)
 {
-	at3codec_ctx = NULL;
 	sceAudiocodecReleaseEDRAM(sceAtrac3_buf);
 	memset(sceAtrac3_buf, 0, 65);
 	
@@ -33,11 +31,9 @@ int sceAtrac3_open(AVCodecContext *ctx)
 	sceAtrac3_buf[44] = 2;
 	if ( sceAudiocodecInit(sceAtrac3_buf, PSP_CODEC_AT3) < 0 )
 	{
-		sceAtrac3_close();
+		sceAtrac3_close(ctx);
 		return 0;
 	}
-	
-	at3codec_ctx = ctx;
 	
 	return 1;
 	
@@ -63,9 +59,9 @@ int sceAtrac3_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int siz
 	int res = sceAudiocodecDecode(sceAtrac3_buf, PSP_CODEC_AT3);
 	//if (res<0) printf("sceat3 err = 0x%08x\n", res );
 	
-	pkt->size -= at3codec_ctx->block_align;
+	pkt->size -= codec_ctx->block_align;
 	if (pkt->size<0) pkt->size = 0;
-	if (pkt->size!=0) pkt->data  += at3codec_ctx->block_align;
+	if (pkt->size!=0) pkt->data += codec_ctx->block_align;
 	
 	return (res<0) ? -1 : sceAtrac3_buf[9];
 }
@@ -74,6 +70,5 @@ const
 AUDIO_DECODER sceAtrac3 = 
 {
 	sceAtrac3_decode,
-	sceAtrac3_close,
-	NULL
+	sceAtrac3_close
 };

@@ -36,14 +36,14 @@
 extern int custom_info[4];
 
 static unsigned long wma_codec_buffer[65] __attribute__((aligned(64)));
-SceAsfParser* parser = NULL;
+static SceAsfParser* parser = NULL;
 
 static struct
 {
 	SceUID asf_modid, cool_modid;
 	void* frame_buffer, *need_mem_buffer;
-	int block_align;
-}SceWma = { -1, -1, NULL, NULL, 1485 };
+	int block_align, stream;
+}SceWma = { -1, -1, NULL, NULL, 1485, 0 };
 
 static const
 unsigned char WMA_GUID[16] =
@@ -57,7 +57,7 @@ unsigned char WMA_GUID[16] =
 #define WMA_FORMAT_TAG 0x0161
 
 static
-void sceWma_close()
+void sceWma_close(AVCodecContext *ctx)
 {
 	sceAudiocodecReleaseEDRAM(wma_codec_buffer);
 	sceAudiocodecReleaseEDRAM(wma_codec_buffer);
@@ -76,7 +76,7 @@ void sceWma_close()
 		sceKernelUnloadModule(SceWma.cool_modid);
 	}
 	SceWma.cool_modid = SceWma.asf_modid = -1;
-	
+	SceWma.stream = 0;
 	memset(wma_codec_buffer, 0, 65); 
 	
 	free(parser);
@@ -88,12 +88,6 @@ void sceWma_close()
 	SceWma.frame_buffer = NULL;
 	
 	SceWma.block_align = 1485;
-}
-
-static
-SceOff asf_seek_cb(void *userdata, void *buf, SceOff offset, int whence)
-{
-	return (SceOff)avio_seek((AVIOContext*)userdata, (SceOff)offset, whence);
 }
 
 int check_ifwma(AVIOContext* fd)
@@ -114,7 +108,6 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 {
 // so goto's will not generate errors
 	int ret;
-	u16* p16;
 	int npt = 0;
 	u16 wma_avg_bytes_per_sec;
 	
@@ -165,24 +158,35 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 	parser->pNeedMemBuffer = SceWma.need_mem_buffer;
 	parser->iUnk3356 = 0x00000000;
 	
-	ret = sceAsfInitParser(parser, io_ctx, &avio_read, &asf_seek_cb);
+	ret = sceAsfInitParser(parser, io_ctx, (PSPAsfReadCallback)&avio_read, (PSPAsfSeekCallback)&avio_seek);
 	if ( ret < 0 )
 	{
 		printf("sceAsfInitParser() = 0x%08x\n", ret);
 		goto error;
 	}
+	{
+		u8 *stream_tag = ((u8*)parser)+(30*4)+6;
+	int i=1;
+	for(;i<128; ++i, stream_tag+=104)
+	{
+		if (*((u16*)stream_tag)!=0x161) continue;
+		SceWma.stream = i;
+		break;
+	}
+	}
+	if (!SceWma.stream)
+		goto error;
 	
 //	wma_channels = *((u16*)need_mem_buffer);
 	custom_info[NFF_TAG_SAMPRATE] = *((int*)(SceWma.need_mem_buffer+4));
-	if (custom_info[NFF_TAG_SAMPRATE]<0)
-		goto error;
-	
+//	if (custom_info[NFF_TAG_SAMPRATE]<0)
+//		goto error;
 	wma_avg_bytes_per_sec = *((u32*)(SceWma.need_mem_buffer+8));
 	custom_info[NFF_TAG_BITRATE] = wma_avg_bytes_per_sec * 8;
 	
 	SceWma.block_align = *((u16*)(SceWma.need_mem_buffer+12));
 //	wma_info[WMA_INFO_FLAG] = *((u16*)(need_mem_buffer+14));
-	custom_info[NFF_TAG_DURATION] = parser->lDuration/10000000;
+	custom_info[NFF_TAG_DURATION] = parser->lDuration/10000000-(*(((int*)parser)+24));//preroll
 	
 	//CheckNeedMem
 	//memset(wma_codec_buffer, 0, 65);
@@ -201,9 +205,9 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 		printf("sceAudiocodecGetEDRAM=0x%08X\n", ret);
 		goto error;
 	}
-	
+	{
 	//Init
-	p16 = (u16*)(&wma_codec_buffer[10]);
+	u16 *p16 = (u16*)(&wma_codec_buffer[10]);
 	p16[0] = WMA_FORMAT_TAG;
 	p16[1] = *((u16*)SceWma.need_mem_buffer); //channels
 	
@@ -216,7 +220,7 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 	p16[2] = *((u16*)(SceWma.need_mem_buffer+14)); //wma_flag;
 	
 	printf("wma flag = %d\n", p16[2]);
-	
+	}
 	ret=sceAudiocodecInit(wma_codec_buffer, 0x1005); 
 	if ( ret < 0 )
 	{
@@ -241,16 +245,16 @@ int sceWma_open(const char *filename, AVIOContext* io_ctx)
 	
 	return 1;
 error:
-	sceWma_close();
+	sceWma_close(NULL);
 	return 0;
 }
 
 static
-int sceWma_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
+int sceWma_decode(short *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 {
 	parser->sFrame.pData = SceWma.frame_buffer;
 	
-	if ( sceAsfGetFrameData(parser, 1, &parser->sFrame) < 0)
+	if ( sceAsfGetFrameData(parser, SceWma.stream, &parser->sFrame) < 0)
 		return -1;
 	
 	wma_codec_buffer[6] = (unsigned long)SceWma.frame_buffer;
@@ -273,11 +277,11 @@ int sceWma_decode(s16 *buf, AVCodecContext *codec_ctx, AVPacket *pkt, int size)
 	return wma_codec_buffer[9];
 }
 
-static
+//static
 int64_t sceWma_seek(int64_t seconds)
 {
 	int secs = seconds*1000;
-	if ( sceAsfSeekTime(parser, 1, &secs) < 0 )
+	if ( sceAsfSeekTime(parser, SceWma.stream, &secs) < 0 )
 		return -1;
 	
 	return (int64_t)secs/1000;
@@ -287,6 +291,5 @@ const
 AUDIO_DECODER sceAsfWma =
 {
 	sceWma_decode,
-	sceWma_close,
-	sceWma_seek
+	sceWma_close
 };

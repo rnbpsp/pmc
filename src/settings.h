@@ -84,7 +84,7 @@ inline int
 PMC_CPU::set_cpu(int cpu)
 {
 // crashing if profiling is enabled
-#if 1
+#if 1 //_ENABLE_DYNAMIC_CPU
 //(!_PROFILE) && !defined(DEBUG)
 	if (settings.dynamic_clock)
 	{

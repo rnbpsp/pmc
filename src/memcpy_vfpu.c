@@ -1,5 +1,5 @@
 #include <psptypes.h>
-void* memcpy( void* dst, void* src, unsigned int size )
+void* memcpy_vfpu( void* dst, void* src, unsigned int size )
 {
 	u8* src8 = (u8*)src;
 	u8* dst8 = (u8*)dst;
@@ -28,7 +28,7 @@ void* memcpy( void* dst, void* src, unsigned int size )
 					*dst32++ = *src32++;
 					size -= 4;
 				}
-	//			if (size==0) return (dst);		 fast out
+				if (size==0) return (dst);		// fast out
 				while (size>=16)
 				{
 					*dst32++ = *src32++;
@@ -50,17 +50,17 @@ void* memcpy( void* dst, void* src, unsigned int size )
 						b = *src8++;
 						c = *src8++;
 						d = *src8++;
-						asm(".set	push\n\t"					// save assembler option
-							".set	noreorder\n\t"			// suppress reordering
+						asm(
+							".set push"						"\n\t"
+							".set noreorder"			"\n\t"
 							"ins %0, %4, 24, 8"		"\n\t"
 							"ins %0, %3, 16, 8"		"\n\t"
 							"ins %0, %2, 8,  8"		"\n\t"
 							"ins %0, %1, 0,  8"		"\n\t"
-							".set	pop\n"					// restore assembler option
+							".set pop"						"\n\t"
 						: "=r" (e)
 						: "r" (a), "r" (b), "r" (c), "r" (d)
 						);
-
 						*dst32++ = e;//(d << 24) | (c << 16) | (b << 8) | a;
 						size -= 4;
 					}
@@ -81,7 +81,7 @@ void* memcpy( void* dst, void* src, unsigned int size )
 	// We use uncached dst to use VFPU writeback and free cpu cache for src only
 	u8* udst8 = (u8*)((u32)dst8 | 0x40000000);
 	// We need the 64 byte aligned address to make sure the dcache is invalidated correctly
-	u8* dst64a = (u8*)((u32)dst8&~0x3F);
+	u8* dst64a = ((u32)dst8&~0x3F);
 	// Invalidate the first line that matches up to the dst start
 	if (size>=64)
 	asm(".set	push\n"					// save assembler option

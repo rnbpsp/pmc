@@ -33,7 +33,7 @@ PMC_PLAYER::audio_callback(void *dest, int& written, AVPacket* packet)
 				return false;
 			}
 			
-			if (packet && packet->size<=0)
+			if (player.codec_ctx && packet->size<=0)
 			{
 					while( av_read_frame(player.format_ctx, packet) >= 0 )
 					{
@@ -68,13 +68,23 @@ dec:
 			else
 			{
 				retries = NUMOF_RETRIES;
-				dest0 += decoded/2;
-				written += decoded/4;
+				dest0 += decoded>>1;
+				written += decoded>>2;
 			}
 	}
 	return false;
 }
 
+static FORCE_INLINE
+short volume_boost(short Sample, unsigned int boost)
+{
+	int intSample = Sample * (boost + 1);
+	
+	if (intSample > 32767) return 32767;
+	else if (intSample < -32768) return -32768;
+	
+	return intSample;
+}
 
 int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 {
@@ -95,11 +105,8 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 		
 		if (player.did_seek)
     {
-			if (player.parser==PMC_PARSER_FFMPEG)
-			{
-				pkt.data = NULL;
-				pkt.size = 0;
-			}
+			pkt.data = NULL;
+			pkt.size = 0;
       player.did_seek = false;
     }
 		
@@ -110,9 +117,24 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 			continue;
 		}
 		else
-			end = player.audio_callback(buf[curbuf], written, player.parser==PMC_PARSER_FFMPEG?&pkt:NULL);
-
+			end = player.audio_callback(buf[curbuf], written, &pkt);
+		
+		if (player.boost)
+			for(int i=0;i<written;++i)
+			{
+				buf[curbuf][i*2]  = volume_boost(buf[curbuf][i*2], player.boost);
+				buf[curbuf][i*2+1]= volume_boost(buf[curbuf][i*2+1], player.boost);
+			}
+		
 		player.frame_timer += written;
+		
+		if (written)
+			for(int i=written-1; i<PMC_AUDIO_NUM_SAMPLES; ++i)
+			{
+				buf[curbuf][i*2]  = 0;
+				buf[curbuf][i*2+1]= 0;
+			}
+		
 		if (player.channel==8)
 			sceAudioSRCOutputBlocking(player.volume, buf[curbuf]);
 		else
@@ -135,7 +157,7 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 		curbuf ^= 1;
 		if (end)
 		{
-			if (strcasecmp(get_ext(player.filename), "mp3") && (player.mode&PL_MODE_LOOP_ONE) && player.seek(0))
+			if (/*strcasecmp(get_ext(player.filename), "mp3") &&*/ (player.mode&PL_MODE_LOOP_ONE) && player.seek(0))
 				continue;
 			player.playing = PLAYER_STOPPED;
 		}
@@ -190,19 +212,25 @@ bool
 PMC_PLAYER::open(const char *path, const char *name)
 {
 	settings.cpu = 333;
+	
+	path = strdup((char*)path);
+	name = strdup((char*)name);
+	
 	this->close();
 	
 	SceUID fd;
 	u8 *io_mem;
 	
-	filepath = strdup(path);
-	filename = strdup(name);
+	filepath = (char*)path;
+	filename = (char*)name;
 	
 	char full_path[strlen(filepath) + strlen(filename) + 1];
 	strcpy(full_path, filepath);
 	strcat(full_path, filename);
 	
+#if _SHOW_ALBUM_ART
 	album_art = load_albumArt(full_path);
+#endif
 	
 	fd = sceIoOpen(full_path, PSP_O_RDONLY, 0);
 	if (fd<0) error_openfile();/*
@@ -219,9 +247,9 @@ PMC_PLAYER::open(const char *path, const char *name)
 	
 	io_ctx = avio_alloc_context(io_mem, PMC_BUFIO_SIZE, 0, \
 												reinterpret_cast<void*>(fd), \
-		reinterpret_cast<int (*)(void*, uint8_t*, int)>(&sceIoRead/*pmc_avio_read*/), \
+		(int (*)(void*, uint8_t*, int))(&sceIoRead/*pmc_avio_read*/), \
 												NULL,
-		reinterpret_cast<int64_t (*)(void*, int64_t,int)>(&sceIoLseek));
+		(int64_t (*)(void*, int64_t,int))(&sceIoLseek));
 	if (!io_ctx)
 	{
 		av_free(io_mem);
@@ -230,13 +258,9 @@ PMC_PLAYER::open(const char *path, const char *name)
 	}
 	
 	printf("opening file\n");
-	if (check_ifwma(io_ctx))
-		parser = PMC_PARSER_SCEWMA;
-	else
+	if (!check_ifwma(io_ctx))
 	{
 ffmpeg_fallback:
-		parser = PMC_PARSER_FFMPEG;
-		
 		format_ctx = avformat_alloc_context();
 		if (!format_ctx) error_openfile();
 		
@@ -259,7 +283,7 @@ ffmpeg_fallback:
 		}
 		
 		printf("finding stream info\n");
-		format_ctx->max_analyze_duration = 5000000/8;
+		format_ctx->max_analyze_duration = 5000000/4;
 		// Retrieve stream information
 		ret = av_find_stream_info(format_ctx);
 		if(ret<0)
@@ -283,16 +307,16 @@ ffmpeg_fallback:
 		
 		stream_ptr = format_ctx->streams[audio_stream];
 		codec_ctx = stream_ptr->codec;
-		
+		/*
 		if (codec_ctx->codec_id!=CODEC_ID_ATRAC3P && \
 				codec_ctx->sample_fmt!=SAMPLE_FMT_S16)
 		{
 			printf("sample format is not S16.\n");
 			error_openfile();
-		}
+		}*/
 	}
 	
-	if (!audio_decoder.open(codec_ctx, full_path, io_ctx, parser))
+	if (!audio_decoder.open(codec_ctx, full_path, io_ctx))
 	{
 		if (codec_ctx==NULL)
 		{
@@ -304,31 +328,32 @@ ffmpeg_fallback:
 		error_openfile();
 	}
 	
-	// TODO: 48khz
-	if (get_samprate()==44100 || get_samprate()==48000)
+	switch(get_samprate())
 	{
-		if (cooleyesAudioSetFrequency(sceKernelDevkitVersion(), get_samprate())<0)
-			goto try_asrc;
-		channel = sceAudioChReserve(-1, PMC_AUDIO_NUM_SAMPLES, PSP_AUDIO_FORMAT_STEREO);
-		if (channel<0) goto try_asrc;
-	}
-	else
-	{
-try_asrc:
-		channel = sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, get_samprate(), 2);
-		if (channel<0)
-		{
-			printf("Cannot reserve audio channel: 0x%08x\n", channel);
-			show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, get_samprate());
-			error_openfile();
-		}
-		channel = 8;
+		case 44100:
+		case 48000:
+			if(cooleyesAudioSetFrequency(sceKernelDevkitVersion(), get_samprate())>=0)
+			{
+				channel = sceAudioChReserve(-1, PMC_AUDIO_NUM_SAMPLES, PSP_AUDIO_FORMAT_STEREO);
+				if (channel>=0)
+					break;
+			}
+		default:
+			channel = sceAudioSRCChReserve(PMC_AUDIO_NUM_SAMPLES, get_samprate(), 2);
+			if (channel<0)
+			{
+				printf("Cannot reserve audio channel: 0x%08x\n", channel);
+				show_errorEx("Error: Cannot reserve audio channel.\n\tsceAudioSRCChReserve = 0x%08x\n\tSample rate = %d", channel, get_samprate());
+				error_openfile();
+			}
+			channel = 8;
+			break;
 	}
 	
 	athread = sceKernelCreateThread("Audio Player Thread", \
-		reinterpret_cast<int (*)(SceSize, void*)>(&PMC_PLAYER::audio_main),
+							(int (*)(SceSize, void*))(&PMC_PLAYER::audio_main),
 														0x12, 1024*1024, \
-						PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU, NULL);
+							PSP_THREAD_ATTR_USER|PSP_THREAD_ATTR_VFPU, NULL);
 	if (athread<0)
 	{
 		printf("Error: cannot create audio decoder thread.\n");
@@ -348,7 +373,6 @@ try_asrc:
 	playing = PLAYER_PLAYING;
 	sceKernelStartThread(athread,0,NULL);
 	
-//	delete full_path;
 	return true;
 }
 
@@ -373,7 +397,7 @@ PMC_PLAYER::close()
 	duration = frame_timer = 0;
 	channel = athread = audio_stream = -1;
 	
-	audio_decoder.close();
+	audio_decoder.close(codec_ctx);
 	codec_ctx = NULL;
 	
 	if (format_ctx!=NULL)
@@ -394,14 +418,12 @@ PMC_PLAYER::close()
 	delete album_art;
 	album_art = NULL;
 	
-	parser = PMC_PARSER_FFMPEG;
-	
 	free(filepath);
 	free(filename);
 	
 	filepath = filename = NULL;
 	
-	extern u16 tag_info[6][256];
+	extern u16 tag_info[4][256];
 	memset(tag_info, 0, sizeof(tag_info));
 }
 
@@ -410,14 +432,26 @@ PMC_PLAYER::get_str(int tag)
 {
 	char temp_str[256] = "";
 	static u16 temp_ustr[256];
-	extern u16 tag_info[6][256];
+	extern u16 tag_info[4][256];
 
-	if (tag<=TAG_SAMPRATE)
+	if (tag<=TAG_COPYRIGHT)
 		return tag_info[tag];
 	else
 	{
 		switch(tag)
 		{
+			case TAG_BITRATE:
+			{
+				pmc_itoa(player.get_bitrate(), temp_str, 10);
+				strcat(temp_str, " kbps");
+				break;
+			}
+			case TAG_SAMPRATE:
+			{
+				pmc_itoa(player.get_samprate(), temp_str, 10);
+				strcat(temp_str, " Hz");
+				break;
+			}
 			case TIMER_STRING:
 			{
 				int64_t cur_sec =  this->get_time();
@@ -481,13 +515,14 @@ PMC_PLAYER::get_str(int tag)
 	return temp_ustr;
 }
 
+extern "C" int64_t sceWma_seek(int64_t seconds);
 bool
 PMC_PLAYER::seek(int64_t seconds)
 {
 	playing |= PLAYER_PAUSED; // pause decoder thread
 	sceKernelDelayThread(1000);
 	
-	if (this->parser==PMC_PARSER_FFMPEG)
+	if (this->format_ctx)
 	{
 		int64_t target = av_rescale(seconds, stream_ptr->time_base.den, stream_ptr->time_base.num);
 		if (avformat_seek_file(format_ctx, audio_stream, 0, target, target, AVSEEK_FLAG_FRAME) <0 )
@@ -499,7 +534,7 @@ PMC_PLAYER::seek(int64_t seconds)
 	}
 	else
 	{
-		int64_t ret = audio_decoder.seek(seconds);
+		int64_t ret = sceWma_seek(seconds);
 		if ( ret < 0 )
 		{
 			playing ^= PLAYER_PAUSED;
@@ -509,7 +544,7 @@ PMC_PLAYER::seek(int64_t seconds)
 	}
 	
 	audio_decoder.flush(codec_ctx);
-	frame_timer =  seconds*( codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE) );
+	frame_timer =  seconds*get_samprate();
 	did_seek = true;
 	playing ^= PLAYER_PAUSED;
 	return true;

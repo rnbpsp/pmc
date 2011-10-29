@@ -55,7 +55,7 @@ typedef struct SceAsfParser {
 typedef int (*PSPAsfReadCallback)(void *userdata, void *buf, SceSize size);
 
 /** Asf seek callback */
-typedef SceOff (*PSPAsfSeekCallback)(void *userdata, void *buf, SceOff offset, int whence);
+typedef SceOff (*PSPAsfSeekCallback)(void *userdata, SceOff offset, int whence);
 
 /**
  * sceAsfCheckNeedMem

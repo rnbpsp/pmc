@@ -2,6 +2,11 @@ CHANGELOG
 	versions and changes are listed from latest(on top) to oldest
 
 version<next>
+	(*)added volume boost
+	(*)update to ffmpeg 0.8.5
+	(*)added vfpu optimizations to ffmpeg(dsputil)
+	(*)fixed: possible crash when album art buffer cannot be allocated
+	(*)fixed: cannot up one folder when select is pressed from list of drives
 	(*)tags from asf(including wma) files are now read
 	(*)tags are now encoded to ucs2 when opening files
 			before, intrafont is encoding them per call to the print funciton

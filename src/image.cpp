@@ -13,7 +13,7 @@ extern "C" {
 Pmc_Image *bkg = NULL;
 
 Pmc_Image::~Pmc_Image(){
-	if (!((u32)data & VRAM_BASE)) free(data);
+	/*if (!((u32)data & VRAM_BASE))*/ free(data);
 //	delete palette;
 };
 

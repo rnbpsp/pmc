@@ -4,7 +4,7 @@
 #include <libccc_mod.h>
 #include <player.h>
 
-u16 tag_info[6][256];
+u16 tag_info[4][256];
 
 static NOINLINE void fill_avtags(AVDictionary *metadata, const cccCode *filename);
 static NOINLINE void fill_asftags(const char *fullpath, const cccCode *filename);
@@ -15,23 +15,6 @@ void fill_tags(AVDictionary *metadata, const char *fullpath, const cccCode *file
 		fill_avtags(metadata, filename);
 	else
 		fill_asftags(fullpath, filename);
-	
-	char temp_str[32]="";
-		
-	pmc_itoa(player.get_bitrate(), temp_str, 10);
-	strcat(temp_str, " kbps");
-		
-		int tlen = strlen(temp_str);
-		cccUTF8toUCS2(tag_info[TAG_BITRATE], tlen, (const cccCode *)temp_str);
-		tag_info[TAG_BITRATE][tlen] = 0;
-		
-		
-	pmc_itoa(player.get_samprate(), temp_str, 10);
-	strcat(temp_str, " Hz");
-		
-		tlen = strlen(temp_str);
-		cccUTF8toUCS2(tag_info[TAG_SAMPRATE], tlen, (const cccCode *)temp_str);
-		tag_info[TAG_SAMPRATE][tlen] = 0;
 }
 
 static NOINLINE

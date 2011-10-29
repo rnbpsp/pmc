@@ -18,12 +18,13 @@ extern "C"
 // number of audio samples per output per channel (17-4111)
 #define PMC_AUDIO_NUM_SAMPLES 4096
 
-// ffmpeg's buffed io is kind of unstable
+// ffmpeg(lavf)'s buffed io is kind of unstable
 // after seeking back to zero from eof
-#define PMC_BUFIO_SIZE (1024*1024)
+// when not using lavc to decode
+#define PMC_BUFIO_SIZE (512*1024)
 
 // number of times to retry decoding if decoder returns an error
-#define NUMOF_RETRIES 3
+#define NUMOF_RETRIES 4
 
 class PMC_PLAYER
 {
@@ -51,11 +52,11 @@ public:
 	
 	// TODO: only asf/wma needs special attention
 	// use libavformat to fetch frames
-#define PMC_PARSER_FFMPEG 0
+//#define PMC_PARSER_FFMPEG 0
 	// some sce codecs needs sce parser
-#define PMC_PARSER_SCEWMA 1
+//#define PMC_PARSER_SCEWMA 1
 //#define PMC_PARSER_SCEAT3 2
-	int parser;
+//	int parser;
 
 // playing
 #define PLAYER_STOPPED	0
@@ -69,6 +70,7 @@ public:
 
 #define PL_MODE_SHUFFLE  4
 	int volume, playing, mode;
+	unsigned int boost;
 	
 	PMC_PLAYER()
 	{
@@ -110,7 +112,6 @@ public:
 	{
 		return (codec_ctx?codec_ctx->bit_rate:audio_decoder.get_int(NFF_TAG_BITRATE))/1000;
 	};
-	
 	int get_samprate()
 	{
 		return (codec_ctx?codec_ctx->sample_rate:audio_decoder.get_int(NFF_TAG_SAMPRATE));

@@ -166,7 +166,7 @@ void list_drives(std::vector<DIR_ENTRY> &files, PMC_LIST &file_list)
 		sceUmdWaitDriveStat(UMD_WAITFORDISC);
 		
 #ifndef DEBUG
-		// seems like psplink is already mounting the UMD
+		// seems psplink is already mounting the UMD
 		// Mount UMD to disc0: file system
 		if (!umd_open && sceUmdActivate(1, "disc0:")<0)
 		{
@@ -475,6 +475,7 @@ void show_filelist(bool show_playing)
 					select_item(files, file_list, player.filename, top_item, sel_item);
 					player_ret = show_nowplaying(NULL, NULL);
 					cursor_bar = POS_CURSOR(sel_item);
+					drives_shown = false;
 					continue;
 			}
 			else if (ctrl.pressed.up)		file_list.up(top_item, sel_item);
@@ -491,7 +492,7 @@ open_item:
 				unsigned int cur_item = top_item+sel_item;
 				
 				// temp workaround for some bug, see TODO (fixed)
-				// but let's keep this just to be sure
+				// but keep this just to be sure
 				if (cur_item>=files.size())
 					cur_item = files.empty() ? 0 : files.size()-1;
 				
