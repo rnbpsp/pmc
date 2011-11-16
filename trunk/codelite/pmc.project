@@ -219,6 +219,7 @@
     <File Name="../src/playlist.cpp"/>
     <File Name="../src/playlist.h"/>
     <File Name="../src/___filelist.h"/>
+    <File Name="../src/vfpu_memcpy.S"/>
   </VirtualDirectory>
   <VirtualDirectory Name="lib">
     <VirtualDirectory Name="ffmpeg-0.8">

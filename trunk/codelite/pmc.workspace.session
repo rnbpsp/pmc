@@ -4,17 +4,45 @@
   <wxString Value="C:\projects\pmc\codelite\pmc.workspace" Name="m_workspaceName"/>
   <TabInfoArray Name="TabInfoArray">
     <TabInfo>
-      <wxString Value="C:\projects\pmc\src\decoders\audio_dec.cpp" Name="FileName"/>
-      <int Value="132" Name="FirstVisibleLine"/>
-      <int Value="134" Name="CurrentLine"/>
+      <wxString Value="C:\projects\pmc\src\vfpu_memcpy.S" Name="FileName"/>
+      <int Value="116" Name="FirstVisibleLine"/>
+      <int Value="130" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="C:\projects\pmc\src\player.cpp" Name="FileName"/>
+      <int Value="209" Name="FirstVisibleLine"/>
+      <int Value="211" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="c:\projects\ffmpeg-0.8.5\libavformat\aviobuf.c" Name="FileName"/>
+      <int Value="651" Name="FirstVisibleLine"/>
+      <int Value="659" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
     </TabInfo>
   </TabInfoArray>
   <SerializedObject Name="m_breakpoints">
-    <long Value="1" Name="Count"/>
+    <long Value="2" Name="Count"/>
     <SerializedObject Name="Breakpoint0">
-      <wxString Value="C:\projects\pmc\src\decoders\audio_dec.cpp" Name="file"/>
-      <int Value="97" Name="lineno"/>
+      <wxString Value="C:\projects\pmc\src\player.cpp" Name="file"/>
+      <int Value="212" Name="lineno"/>
+      <wxString Value="" Name="function_name"/>
+      <wxString Value="" Name="memory_address"/>
+      <int Value="1" Name="bp_type"/>
+      <int Value="0" Name="watchpoint_type"/>
+      <wxString Value="" Name="watchpt_data"/>
+      <CData Name="commandlist"/>
+      <bool Value="0" Name="regex"/>
+      <bool Value="0" Name="is_temp"/>
+      <bool Value="1" Name="is_enabled"/>
+      <int Value="0" Name="ignore_number"/>
+      <wxString Value="" Name="conditions"/>
+      <int Value="0" Name="origin"/>
+    </SerializedObject>
+    <SerializedObject Name="Breakpoint1">
+      <wxString Value="C:\projects\pmc\src\vfpu_memcpy.S" Name="file"/>
+      <int Value="5" Name="lineno"/>
       <wxString Value="" Name="function_name"/>
       <wxString Value="" Name="memory_address"/>
       <int Value="1" Name="bp_type"/>

@@ -1,7 +1,9 @@
 CHANGELOG
 	versions and changes are listed from latest(on top) to oldest
-
+Knowing your past only leads to regrets think of the future
+there is a reason behind any deed, even those that appear wicked. fight your foes, you may, but do not deny their humanity.
 version<next>
+	(*)replaced memcpy with an asm version based on raphael's
 	(*)added volume boost
 	(*)update to ffmpeg 0.8.5
 	(*)added vfpu optimizations to ffmpeg(dsputil)

@@ -8,11 +8,12 @@
 #include <psputility.h>
 #include <pspvaudio.h>
 #include <cooleyesBridge.h>
+#include <pspvfpu.h>
 
 PMC_PLAYER player;
 
 #define output_silence(buf, num) \
-	memset((void*)buf, 0, num*4)
+	memset((void*)(buf), 0, (num)*4)
 
 
 bool
@@ -47,8 +48,6 @@ PMC_PLAYER::audio_callback(void *dest, int& written, AVPacket* packet)
 							output_silence(dest0, remaining);
 							return false;
 						}
-						
-			//			sceKernelDelayThread(0);
 					}
 					output_silence(dest0, remaining);
 					return true;
@@ -97,6 +96,9 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 	pkt.data = NULL;
 	pkt.size = 0;
 
+	pspvfpu_context *vfpu_ctxpl = pspvfpu_initcontext();
+	pspvfpu_use_matrices(vfpu_ctxpl, VMAT0, 0);
+	
 	int curbuf = 0;
 	while(player.playing != PLAYER_STOPPED)
 	{
@@ -127,13 +129,15 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 			}
 		
 		player.frame_timer += written;
-		
+		/*
 		if (written)
 			for(int i=written-1; i<PMC_AUDIO_NUM_SAMPLES; ++i)
 			{
 				buf[curbuf][i*2]  = 0;
 				buf[curbuf][i*2+1]= 0;
 			}
+		*/
+		output_silence(&(buf[curbuf][written]), PMC_AUDIO_NUM_SAMPLES-written);
 		
 		if (player.channel==8)
 			sceAudioSRCOutputBlocking(player.volume, buf[curbuf]);
@@ -163,6 +167,7 @@ int PMC_PLAYER::audio_main(SceSize argc, void* argv)
 		}
 	}
 	
+	pspvfpu_deletecontext(vfpu_ctxpl);
 	sceKernelExitThread(0);
 	return 0;
 }
