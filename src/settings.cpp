@@ -13,8 +13,8 @@ extern void show_notdone();
 #include <minIni.h>
 #include <psputility.h>
 
-#define FILE_SETS "ini/settings.ini"
-#define FILE_EXTS "ini/cpu.ini"
+const char FILE_SETS[] = "ini/settings.ini";
+const char FILE_EXTS[] = "ini/cpu.ini";
 
 #define SET_MAIN 0
 #define SET_EXTS 1

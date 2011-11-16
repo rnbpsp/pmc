@@ -2,7 +2,6 @@
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <psppower.h>
-
 int battery_percent(int text)
 {
 	static int charge_effect = -25;

@@ -1,6 +1,6 @@
 TARGET = pmc
 
-PMC_GDB_DEBUG = 0
+PMC_GDB_DEBUG = 1
 
 PMC_DEBUG = 1
 PMC_SHOWFPS = 1
@@ -11,9 +11,9 @@ PMC_PROFILE = 0
 # v85
 FFMPEG_PORT = v85
 
-USE_SCE_DECODERS = 0
+USE_SCE_DECODERS = 1
 ENABLE_DYNAMIC_CPU = 0
-SHOW_ALBUM_ART = 0
+SHOW_ALBUM_ART = 1
 
 PMC_VER_MAJOR = 0
 PMC_VER_MINOR = 3
@@ -29,8 +29,10 @@ MAIN = \
 		src/topbar.o				\
 		src/callbacks.o			\
 		src/notdone.o				\
-		src/memcpy_vfpu.o		\
+		src/memcpy.o				\
 		src/load_tga.o
+#		src/memcpy_vfpu.o		\
+#		src/vfpu_memcpy.o		\
 #		src/item_list.o			\
 
 FILEIO = \
@@ -79,7 +81,7 @@ PSP_FW_VERSION = 500
 MIPS_OPTIMIZATIONS = \
 		-ffast-math \
 		-fsingle-precision-constant
-#		-mfp32 -msingle-float -mhard-float
+#		-mfp32 -msingle-float -mhard-float -Dmemcpy=memcpy_vfpu
 
 PMC_VERSION = \
 	-D__PMC_VER_MAJOR=$(PMC_VER_MAJOR) \
@@ -98,7 +100,7 @@ CFLAGS = -G0 -Wall -DPSP -D__psp__ -MD \
 				$(PMC_VERSION)
 				
 LIBS = -ljpeg -ltaglib -lavformat -lavcodec -lbz2 -lz -lpng15 -lavutil -lm \
-		-lpspaudio -lpspaudiocodec -lpspasfparser \
+		-lpspaudio -lpspaudiocodec -lpspasfparser -lpspvfpu \
 		-lpspfpu -lintraFont_mod -lpspgu -lminIni \
 		-lpspumd -lpsphprm -lpsprtc -lpsppower -lstdc++
 #-lminIni -lswscale -lpspvfpu
@@ -123,7 +125,7 @@ CFLAGS += -fomit-frame-pointer
 endif
 
 ifeq ($(PMC_GDB_DEBUG),1)
-CFLAGS += -fno-omit-frame-pointer -ggdb3 -DDEBUG -Winline -Wdisabled-optimization
+CFLAGS += -fno-omit-frame-pointer -ggdb3 -DDEBUG -Winline
 else
 CFLAGS += -O2 -ggdb3 -DDEBUG -Wdisabled-optimization
 endif
@@ -134,8 +136,8 @@ PSP_LARGE_MEMORY = 1
 endif
 
 
-CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions -fno-check-new
-
+CXXFLAGS = -fno-rtti -fno-exceptions -fno-check-new
+#$(CFLAGS) 
 DEP_FILES := $(OBJS:.o=.d)
 
 EXTRA_CLEAN=$(DEP_FILES) $(TARGET).sym gmon.out

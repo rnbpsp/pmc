@@ -1,6 +1,7 @@
 #include <pspkernel.h>
 #include <psppower.h>
 #include <pspsdk.h>
+#include <pspvfpu.h>
 #include <RnBridge.h>
 #include "main.h"
 #include "callbacks.h"
@@ -29,6 +30,7 @@ extern void show_filelist(bool show_playing=false);
 extern Pmc_ImageTile list_bkg;
 extern Pmc_ImageTile file_ico[2];
 menu_type cur_submenu = HOMEMENU;
+//SceUID memcpy_sema = -1;
 
 static FORCE_INLINE
 int next_submenu(int current)
@@ -80,6 +82,9 @@ int main()
 		printf("Cannot set initial cpu speed\n");
 #endif //	!(_PROFILE)
 
+  SceUID hold_modid = -1, rnb_modid = -1;
+  Pmc_Image *icons_img = NULL;
+  
 	printf("set up callbacks\n");
 	set_callbacks();
 	
@@ -87,7 +92,10 @@ int main()
 	ctrl.autorepeat_delay = 10;
 	ctrl.autorepeat_interval = 5;
 	ctrl.autorepeat_mask = (CTRL_RIGHT|CTRL_LEFT);
-	
+	/*
+	memcpy_sema = sceKernelCreateSema("VFPU memcpy", 0, 1, 1, 0);
+	if (memcpy_sema<0) goto err;
+	*/
 	gu_init();
 	
 	pspDebugScreenInit();
@@ -126,7 +134,7 @@ int main()
 	pspDebugScreenSetXY(33,16);
 	pspDebugScreenPrintf("Loading images and icons.......");
 	
-	Pmc_Image *icons_img = load_tga("res/icons.tga");
+	icons_img = load_tga("res/icons.tga");
 	
 	list_bkg.set(icons_img, 0, 75, 480, 232+75);
 
@@ -174,7 +182,6 @@ int main()
 	pspDebugScreenSetXY(33,17);
 	pspDebugScreenPrintf("Loading support module.........");
 	
-  SceUID hold_modid = -1, rnb_modid = -1;
   rnb_modid = pmc_loadmod("RnBridge.prx", 18);
 	if (rnb_modid<0)
 		goto err;
@@ -317,6 +324,8 @@ err:
 		sceKernelStopModule(rnb_modid, 0, NULL, &ret, NULL);
 		sceKernelUnloadModule(rnb_modid);
 	}
+	
+	//if (memcpy_sema>=0) sceKernelDeleteSema(memcpy_sema);
 	
 #if (_PROFILE)
 	if (!state.exit_viaCallback)

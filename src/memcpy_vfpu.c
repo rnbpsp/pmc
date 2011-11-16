@@ -1,6 +1,15 @@
+#include <pspkernel.h>
 #include <psptypes.h>
-void* memcpy_vfpu( void* dst, void* src, unsigned int size )
+#define return(x) \
+do { \
+	if (signal_sema) sceKernelSignalSema(memcpy_sema, 1); \
+	return x; \
+}while(0)
+
+__attribute__((nonnull, optimize(O2), hot))
+void* memcpy( void* dst, void* src, unsigned int size )
 {
+	int signal_sema = 0;
 	u8* src8 = (u8*)src;
 	u8* dst8 = (u8*)dst;
 	
@@ -28,7 +37,7 @@ void* memcpy_vfpu( void* dst, void* src, unsigned int size )
 					*dst32++ = *src32++;
 					size -= 4;
 				}
-				if (size==0) return (dst);		// fast out
+				if (size==0) return(dst);		// fast out
 				while (size>=16)
 				{
 					*dst32++ = *src32++;
@@ -37,34 +46,35 @@ void* memcpy_vfpu( void* dst, void* src, unsigned int size )
 					*dst32++ = *src32++;
 					size -= 16;
 				}
-				if (size==0) return (dst);		// fast out
+				if (size==0) return(dst);		// fast out
 				src8 = (u8*)src32;
 				dst8 = (u8*)dst32;
 				break;
 			default:
 				{
-					register u32 a, b, c, d, e;
+				//	register u32 a, b, c, d;
 					while (size>=4)
-					{
+					{/*
 						a = *src8++;
 						b = *src8++;
 						c = *src8++;
 						d = *src8++;
-						asm(
-							".set push"						"\n\t"
-							".set noreorder"			"\n\t"
-							"ins %0, %4, 24, 8"		"\n\t"
-							"ins %0, %3, 16, 8"		"\n\t"
-							"ins %0, %2, 8,  8"		"\n\t"
-							"ins %0, %1, 0,  8"		"\n\t"
-							".set pop"						"\n\t"
-						: "=r" (e)
-						: "r" (a), "r" (b), "r" (c), "r" (d)
-						);
-						*dst32++ = e;//(d << 24) | (c << 16) | (b << 8) | a;
-						size -= 4;
+						*dst32++ = (d << 24) | (c << 16) | (b << 8) | a;
+						size -= 4;*/
+						asm(".set	push\n"						// save assembler option
+								".set	noreorder\n"			// suppress reordering
+								"ulw	 $8,  0(%1)\n"		// $8  = *(s + 0)
+								"sw		 $8,  0(%0)\n"
+								"addiu	%2, %2, -4\n"
+								"addiu	%1, %1,  4\n"
+								"addiu	%0, %0,  4\n"
+								".set	pop\n"					// restore assembler option
+								:"+r"(dst32),"+r"(src8),"+r"(size)
+								:
+								:"$8","memory"
+								);
 					}
-					if (size==0) return (dst);		// fast out
+					if (size==0) return(dst);		// fast out
 					dst8 = (u8*)dst32;
 				}
 				break;
@@ -81,9 +91,17 @@ void* memcpy_vfpu( void* dst, void* src, unsigned int size )
 	// We use uncached dst to use VFPU writeback and free cpu cache for src only
 	u8* udst8 = (u8*)((u32)dst8 | 0x40000000);
 	// We need the 64 byte aligned address to make sure the dcache is invalidated correctly
-	u8* dst64a = ((u32)dst8&~0x3F);
-	// Invalidate the first line that matches up to the dst start
+	u8* dst64a = (u8*)((u32)dst8&~0x3F);
+	
+	if (memcpy_sema>=0)
+	{
+		sceKernelWaitSema(memcpy_sema, 1, 0);
+		sceKernelSignalSema(memcpy_sema, 1);
+		signal_sema = 1;
+	}
+	
 	if (size>=64)
+	// Invalidate the first line that matches up to the dst start
 	asm(".set	push\n"					// save assembler option
 		".set	noreorder\n"			// suppress reordering
 		"cache 0x1B, 0(%0)\n"
@@ -221,53 +239,37 @@ void* memcpy_vfpu( void* dst, void* src, unsigned int size )
 					".set	noreorder\n"			// suppress reordering
 					"cache 0x1B,  0(%2)\n"
 
-					"lwr	 $8,  0(%1)\n"			//
-					"lwl	 $8,  3(%1)\n"			// $8  = *(s + 0)
-					"lwr	 $9,  4(%1)\n"			//
-					"lwl	 $9,  7(%1)\n"			// $9  = *(s + 4)
-					"lwr	$10,  8(%1)\n"			//
-					"lwl	$10, 11(%1)\n"			// $10 = *(s + 8)
-					"lwr	$11, 12(%1)\n"			//
-					"lwl	$11, 15(%1)\n"			// $11 = *(s + 12)
+					"ulw	 $8,  0(%1)\n"			// $8  = *(s + 0)
+					"ulw	 $9,  4(%1)\n"			// $9  = *(s + 4)
+					"ulw	$10,  8(%1)\n"			// $10 = *(s + 8)
+					"ulw	$11, 12(%1)\n"			// $11 = *(s + 12)
 					"mtv	 $8, s000\n"
 					"mtv	 $9, s001\n"
 					"mtv	$10, s002\n"
 					"mtv	$11, s003\n"
 
-					"lwr	 $8, 16(%1)\n"
-					"lwl	 $8, 19(%1)\n"
-					"lwr	 $9, 20(%1)\n"
-					"lwl	 $9, 23(%1)\n"
-					"lwr	$10, 24(%1)\n"
-					"lwl	$10, 27(%1)\n"
-					"lwr	$11, 28(%1)\n"
-					"lwl	$11, 31(%1)\n"
+					"ulw	 $8, 16(%1)\n"
+					"ulw	 $9, 20(%1)\n"
+					"ulw	$10, 24(%1)\n"
+					"ulw	$11, 28(%1)\n"
 					"mtv	 $8, s010\n"
 					"mtv	 $9, s011\n"
 					"mtv	$10, s012\n"
 					"mtv	$11, s013\n"
 					
-					"lwr	 $8, 32(%1)\n"
-					"lwl	 $8, 35(%1)\n"
-					"lwr	 $9, 36(%1)\n"
-					"lwl	 $9, 39(%1)\n"
-					"lwr	$10, 40(%1)\n"
-					"lwl	$10, 43(%1)\n"
-					"lwr	$11, 44(%1)\n"
-					"lwl	$11, 47(%1)\n"
+					"ulw	 $8, 32(%1)\n"
+					"ulw	 $9, 36(%1)\n"
+					"ulw	$10, 40(%1)\n"
+					"ulw	$11, 44(%1)\n"
 					"mtv	 $8, s020\n"	
 					"mtv	 $9, s021\n"
 					"mtv	$10, s022\n"
 					"mtv	$11, s023\n"
 
-					"lwr	 $8, 48(%1)\n"
-					"lwl	 $8, 51(%1)\n"
-					"lwr	 $9, 52(%1)\n"
-					"lwl	 $9, 55(%1)\n"
-					"lwr	$10, 56(%1)\n"
-					"lwl	$10, 59(%1)\n"
-					"lwr	$11, 60(%1)\n"
-					"lwl	$11, 63(%1)\n"
+					"ulw	 $8, 48(%1)\n"
+					"ulw	 $9, 52(%1)\n"
+					"ulw	$10, 56(%1)\n"
+					"ulw	$11, 60(%1)\n"
 					"mtv	 $8, s030\n"
 					"mtv	 $9, s031\n"
 					"mtv	$10, s032\n"
@@ -301,14 +303,10 @@ void* memcpy_vfpu( void* dst, void* src, unsigned int size )
 			{
 				asm(".set	push\n"					// save assembler option
 					".set	noreorder\n"			// suppress reordering
-					"lwr	 $8,  0(%1)\n"			//
-					"lwl	 $8,  3(%1)\n"			// $8  = *(s + 0)
-					"lwr	 $9,  4(%1)\n"			//
-					"lwl	 $9,  7(%1)\n"			// $9  = *(s + 4)
-					"lwr	$10,  8(%1)\n"			//
-					"lwl	$10, 11(%1)\n"			// $10 = *(s + 8)
-					"lwr	$11, 12(%1)\n"			//
-					"lwl	$11, 15(%1)\n"			// $11 = *(s + 12)
+					"ulw	 $8,  0(%1)\n"			// $8  = *(s + 0)
+					"ulw	 $9,  4(%1)\n"			// $9  = *(s + 4)
+					"ulw	$10,  8(%1)\n"			// $10 = *(s + 8)
+					"ulw	$11, 12(%1)\n"			// $11 = *(s + 12)
 					"mtv	 $8, s000\n"
 					"mtv	 $9, s001\n"
 					"mtv	$10, s002\n"
@@ -341,5 +339,5 @@ bytecopy:
 		*dst8++ = *src8++;
 	}
 	
-	return (dst);
+	return(dst);
 }
