@@ -1,0 +1,1 @@
+This is a music player for the Sony PSP powered by FFMpeg which means you can play all audio codecs from any container format supported by ffmpeg(http://ffmpeg.org/general.html). This also makes use of the PSP's hardware decoders for some codecs.
